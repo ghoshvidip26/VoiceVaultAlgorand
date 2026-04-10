@@ -1,0 +1,67 @@
+#pragma version 11
+#pragma typetrack false
+
+// algopy.arc4.ARC4Contract.approval_program() -> uint64:
+main:
+    // smart_contracts/hello_world/contract.py:3
+    // class HelloWorldContract(ARC4Contract):
+    txn NumAppArgs
+    bz main___algopy_default_create@5
+    pushbytes 0x02bece11 // method "hello(string)string"
+    txna ApplicationArgs 0
+    match main_hello_route@3
+    err
+
+main_hello_route@3:
+    // smart_contracts/hello_world/contract.py:4
+    // @arc4.abimethod
+    txn OnCompletion
+    !
+    txn ApplicationID
+    &&
+    assert
+    b hello
+
+main___algopy_default_create@5:
+    txn OnCompletion
+    !
+    txn ApplicationID
+    !
+    &&
+    return
+
+
+// smart_contracts.hello_world.contract.HelloWorldContract.hello[routing]() -> void:
+hello:
+    // smart_contracts/hello_world/contract.py:4
+    // @arc4.abimethod
+    txna ApplicationArgs 1
+    dup
+    pushint 0
+    extract_uint16 // on error: invalid array length header
+    pushint 2
+    +
+    dig 1
+    len
+    ==
+    assert // invalid number of bytes for arc4.dynamic_array<arc4.uint8>
+    // smart_contracts/hello_world/contract.py:6
+    // return "Hello, "+name
+    extract 2 0
+    pushbytes 0x000748656c6c6f2c20
+    swap
+    concat // on error: max array length exceeded
+    dup
+    extract 2 0
+    len
+    itob
+    extract 6 2
+    replace2 0
+    // smart_contracts/hello_world/contract.py:4
+    // @arc4.abimethod
+    pushbytes 0x151f7c75
+    swap
+    concat
+    log
+    pushint 1
+    return
