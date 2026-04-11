@@ -105,14 +105,3 @@ def payFullToCreator(
         InnerTxnBuilder.Submit(),
         Log(Bytes("FULL_PAYMENT")),
     )
-
-@app.external(read_only=True)
-def calculatePaymentBreakdown(amount: abi.Uint64,*,output: abi.Tuple[abi.Uint64, abi.Uint64, abi.Uint64]): 
-    platform_fee = WideRatio([amount.get(), Int(250)], [Int(10000)])
-    remaining = amount.get() - platform_fee
-    royalty = WideRatio([remaining, Int(1000)], [Int(10000)])
-    creator_amt = remaining - royalty
-
-    return output.set(platform_fee, royalty, creator_amt)
-
-

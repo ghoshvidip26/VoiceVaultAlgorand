@@ -11,7 +11,7 @@ import { Helmet } from "react-helmet-async";
 import { toast } from "sonner";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { getPurchasedVoices, removePurchasedVoiceByUri } from "@/lib/purchasedVoices";
-import { useAptosWallet } from "@/hooks/useAptosWallet";
+import { useAlgorandWallet } from "@/hooks/useAlgorandWallet";
 import { useVoiceMetadata } from "@/hooks/useVoiceMetadata";
 
 const Upload = () => {
@@ -23,7 +23,7 @@ const Upload = () => {
   const [ttsAudioUrl, setTtsAudioUrl] = useState<string | null>(null);
 
   // ------------------- Voice Model Processing (Shelby) -------------------
-  const { address, isConnected } = useAptosWallet();
+  const { address, isConnected } = useAlgorandWallet();
   const { metadata: ownVoiceMetadata } = useVoiceMetadata(address?.toString() || null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [recording, setRecording] = useState(false);
@@ -461,7 +461,7 @@ const Upload = () => {
             <CardHeader>
               <CardTitle>Step 1: Process Your Voice Model</CardTitle>
               <CardDescription>
-                Upload audio → Generate voice embedding → Store on Shelby → Register on Aptos blockchain
+                Upload audio → Generate voice embedding → Store on Shelby → Register on Algorand
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
@@ -555,9 +555,9 @@ const Upload = () => {
           {/* ------------------- Registration Form ------------------- */}
           <Card>
             <CardHeader>
-              <CardTitle>Step 2: Register Your Voice Model on Aptos Blockchain</CardTitle>
+              <CardTitle>Step 2: Register Your Voice Model on Algorand</CardTitle>
               <CardDescription>
-                After processing and uploading your voice model to Shelby, register it on Aptos blockchain to make it available in the marketplace.
+                After processing and uploading your voice model to Shelby, register it on Algorand to make it available in the marketplace.
                 <br />
                 {autoModelUri && (
                   <span className="text-sm text-primary mt-2 block">

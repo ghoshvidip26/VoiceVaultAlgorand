@@ -32,3 +32,9 @@ frontend/package-lock.json
 frontend/.env
 next/.env
 .claude/
+
+/.algokit_pkgs
+/.algokit-venv
+/.localappdata 
+
+conversion.md

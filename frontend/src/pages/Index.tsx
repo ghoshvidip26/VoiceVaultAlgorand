@@ -11,7 +11,7 @@ const Index = () => {
     <>
       <Helmet>
         <title>VoiceVault - Own Your Voice, Earn Forever | AI Voice Cloning Platform</title>
-        <meta name="description" content="Create custom AI voice models, mint on-chain ownership on Aptos blockchain, and earn every time someone uses your voice for TTS generation." />
+        <meta name="description" content="Create custom AI voice models, mint on-chain ownership on Algorand, and earn every time someone uses your voice for TTS generation." />
       </Helmet>
       <div className="min-h-screen bg-background">
         <Navbar />

@@ -8,9 +8,11 @@ app = Application("Voice")
 @app.external
 def registerVoice(name: abi.String,modelUri: abi.String,rights: abi.String,pricePerUse: abi.Uint64): 
     sender = Txn.sender()
+    voice_exists = App.globalGetEx(Global.current_application_id(), voice_exists_key(sender))
     return Seq(
+        voice_exists,
         # Ensure voice does not already exist
-        Assert(App.globalGetEx(Global.current_application_id(),voice_exists_key(sender)).hasValue()==Int(0)),
+        Assert(voice_exists.hasValue()==Int(0)),
         
         # Store data
         App.globalPut(voice_exists_key(sender),Int(1)),
@@ -26,41 +28,19 @@ def registerVoice(name: abi.String,modelUri: abi.String,rights: abi.String,price
 @app.external(read_only=True)
 def getVoiceId(owner: abi.Address,*,output: abi.Uint64): 
     key = voice_id_key(owner.get())
+    voice_id = App.globalGetEx(Global.current_application_id(), key)
     return Seq(
-        Assert(App.globalGetEx(Global.current_application_id(), key).hasValue()),
-        output.set(App.globalGet(key))
+        voice_id,
+        Assert(voice_id.hasValue()),
+        output.set(voice_id.value())
     )
     
 @app.external(read_only=True)
-def getMetadata(owner: abi.Address,*,output: abi.Tuple[
-    abi.Address,
-    abi.Uint64,
-    abi.String,
-    abi.String,
-    abi.String,
-    abi.Uint64,
-    abi.Uint64
-]): 
-    addr = owner.get()
-
-    return Seq(
-        Assert(App.globalGet(voice_exists_key(addr)) == Int(1)),
-
-        output.set(
-            addr,
-            App.globalGet(voice_id_key(addr)),
-            App.globalGet(voice_name_key(addr)),
-            App.globalGet(voice_uri_key(addr)),
-            App.globalGet(voice_rights_key(addr)),
-            App.globalGet(voice_price_key(addr)),
-            App.globalGet(voice_created_key(addr)),
-        )
-    )
-
-@app.external(read_only=True)
 def voice_exists(owner: abi.Address, *, output: abi.Bool):
-    return output.set(
-        App.globalGetEx(Global.current_application_id(), voice_exists_key(owner.get())).hasValue()
+    voice_exists_value = App.globalGetEx(Global.current_application_id(), voice_exists_key(owner.get()))
+    return Seq(
+        voice_exists_value,
+        output.set(voice_exists_value.hasValue())
     )
 
 def counter_key(addr):

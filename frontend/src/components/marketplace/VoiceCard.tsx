@@ -71,7 +71,7 @@ export function VoiceCard({ voice, onSelect }: VoiceCardProps) {
         <div className="flex items-center gap-1 text-primary">
           <DollarSign className="h-4 w-4" />
           <span className="font-semibold">{voice.pricePerUse}</span>
-          <span className="text-muted-foreground">APT/use</span>
+          <span className="text-muted-foreground">ALGO/use</span>
         </div>
         <div className="flex items-center gap-3 text-muted-foreground">
           <div className="flex items-center gap-1">

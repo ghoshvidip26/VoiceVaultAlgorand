@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useVoiceRegister } from "@/hooks/useVoiceRegister";
 import { useVoiceUnregister } from "@/hooks/useVoiceUnregister";
-import { useAptosWallet } from "@/hooks/useAptosWallet";
+import { useAlgorandWallet } from "@/hooks/useAlgorandWallet";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -12,6 +12,7 @@ import { toast } from "sonner";
 import { addVoiceToRegistry, removeVoiceFromRegistry } from "@/lib/voiceRegistry";
 import { useVoiceMetadata } from "@/hooks/useVoiceMetadata";
 import { isShelbyUri, parseShelbyUri } from "@/lib/shelby";
+import { getExplorerTxUrl } from "@/lib/algorand";
 
 interface VoiceRegistrationFormProps {
   autoName?: string;
@@ -21,7 +22,7 @@ interface VoiceRegistrationFormProps {
 export function VoiceRegistrationForm({ autoName = "", autoModelUri = "" }: VoiceRegistrationFormProps) {
   const { registerVoice, isRegistering } = useVoiceRegister();
   const { unregisterVoice, isUnregistering } = useVoiceUnregister();
-  const { address, isConnected } = useAptosWallet();
+  const { address, isConnected } = useAlgorandWallet();
   const [formData, setFormData] = useState({
     name: autoName,
     modelUri: autoModelUri,
@@ -103,7 +104,7 @@ export function VoiceRegistrationForm({ autoName = "", autoModelUri = "" }: Voic
     // Contract will reject with ERROR_VOICE_ALREADY_EXISTS if it exists anyway
 
     // Register voice on-chain (contract handles all validation)
-    toast.info("Registering voice on Aptos blockchain...");
+    toast.info("Registering voice on Algorand...");
     const result = await registerVoice({
       name: formData.name.trim(),
       modelUri: formData.modelUri.trim(),
@@ -129,7 +130,7 @@ export function VoiceRegistrationForm({ autoName = "", autoModelUri = "" }: Voic
         action: {
           label: "View on Explorer",
           onClick: () => {
-            window.open(`https://explorer.aptoslabs.com/txn/${result.transactionHash}?network=testnet`, '_blank');
+            window.open(getExplorerTxUrl(result.transactionHash), "_blank");
           },
         },
       });
@@ -161,7 +162,7 @@ export function VoiceRegistrationForm({ autoName = "", autoModelUri = "" }: Voic
       return;
     }
 
-    toast.info("Deleting voice on Aptos blockchain...");
+    toast.info("Deleting voice on Algorand...");
     const result = await unregisterVoice();
 
     if (result?.success) {
@@ -191,7 +192,7 @@ export function VoiceRegistrationForm({ autoName = "", autoModelUri = "" }: Voic
         action: {
           label: "View on Explorer",
           onClick: () => {
-            window.open(`https://explorer.aptoslabs.com/txn/${result.transactionHash}?network=testnet`, '_blank');
+            window.open(getExplorerTxUrl(result.transactionHash), "_blank");
           },
         },
       });
@@ -228,7 +229,7 @@ export function VoiceRegistrationForm({ autoName = "", autoModelUri = "" }: Voic
                   <strong>Model URI:</strong> {existingVoice.modelUri}
                 </p>
                 <p>
-                  <strong>Price:</strong> {existingVoice.pricePerUse} APT per use
+                  <strong>Price:</strong> {existingVoice.pricePerUse} ALGO per use
                 </p>
                 <p className="text-sm text-muted-foreground mt-2">
                   The contract allows only one voice per wallet address. You can delete this voice to register a new one.
@@ -271,7 +272,7 @@ export function VoiceRegistrationForm({ autoName = "", autoModelUri = "" }: Voic
       <CardHeader>
         <CardTitle>Register Your Voice on-Chain</CardTitle>
         <CardDescription>
-          Register your voice model on Aptos blockchain to start earning. Only one voice per wallet address.
+          Register your voice model on Algorand to start earning. Only one voice per wallet address.
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -319,7 +320,7 @@ export function VoiceRegistrationForm({ autoName = "", autoModelUri = "" }: Voic
             <p className="text-xs text-muted-foreground">
               Required. Enter the Shelby URI for your voice model. If you processed your voice above, this should be auto-filled.
               <br />
-              Format: <code className="text-xs">shelby://&lt;aptos_account&gt;/voices/&lt;voice_id&gt;</code>
+              Format: <code className="text-xs">shelby://&lt;algorand_address&gt;/voices/&lt;voice_id&gt;</code>
               <br />
               Only Shelby URIs are accepted. Process your voice model in Step 2 to get a Shelby URI.
             </p>
@@ -343,7 +344,7 @@ export function VoiceRegistrationForm({ autoName = "", autoModelUri = "" }: Voic
 
           <div className="space-y-2">
             <Label htmlFor="price">
-              Price Per Use (APT) <span className="text-red-500">*</span>
+              Price Per Use (ALGO) <span className="text-red-500">*</span>
             </Label>
             <Input
               id="price"
@@ -356,14 +357,14 @@ export function VoiceRegistrationForm({ autoName = "", autoModelUri = "" }: Voic
               required
             />
             <p className="text-xs text-muted-foreground">
-              Set the price per use in APT. Must be greater than 0.
+              Set the price per use in ALGO. Must be greater than 0.
             </p>
           </div>
 
           <Alert>
             <AlertCircle className="h-4 w-4" />
             <AlertDescription className="text-xs">
-              <strong>Important:</strong> This will register your voice on Aptos blockchain. 
+              <strong>Important:</strong> This will register your voice on Algorand. 
               Only one voice per wallet address is allowed. You will need to sign a transaction with your wallet.
             </AlertDescription>
           </Alert>

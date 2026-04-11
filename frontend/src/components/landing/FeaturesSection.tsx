@@ -16,7 +16,7 @@ const features = [
   {
     icon: Shield,
     title: "On-Chain Ownership",
-    description: "Your voice identity is minted on Aptos blockchain. Cryptographically proven ownership.",
+    description: "Your voice identity is minted on Algorand. Cryptographically proven ownership.",
     color: "primary",
   },
   {

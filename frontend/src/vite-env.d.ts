@@ -1,14 +1,20 @@
 /// <reference types="vite/client" />
 
-interface Window {
-  aptos?: {
-    connect: () => Promise<{ address: string; publicKey: string }>;
-    disconnect: () => Promise<void>;
-    account: () => Promise<{ address: string; publicKey: string }>;
-    network: () => Promise<string>;
-    signMessage: (message: { message: string; nonce: string }) => Promise<{ signature: string }>;
-    signTransaction: (transaction: any) => Promise<any>;
-    onAccountChange?: (callback: (account: any) => void) => void;
-    onNetworkChange?: (callback: (network: any) => void) => void;
-  };
+interface ImportMetaEnv {
+  readonly VITE_ALGOD_SERVER?: string;
+  readonly VITE_ALGOD_PORT?: string;
+  readonly VITE_ALGOD_TOKEN?: string;
+  readonly VITE_INDEXER_SERVER?: string;
+  readonly VITE_INDEXER_PORT?: string;
+  readonly VITE_INDEXER_TOKEN?: string;
+  readonly VITE_PAYMENT_APP_ID?: string;
+  readonly VITE_VOICE_APP_ID?: string;
+  readonly VITE_PLATFORM_ADDRESS?: string;
+  readonly VITE_API_URL?: string;
+  readonly VITE_PROXY_URL?: string;
+  readonly VITE_SHELBY_RPC_URL?: string;
+}
+
+interface ImportMeta {
+  readonly env: ImportMetaEnv;
 }

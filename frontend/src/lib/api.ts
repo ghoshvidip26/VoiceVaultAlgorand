@@ -40,7 +40,7 @@ export const backendApi = {
    * Generate speech using unified TTS endpoint (handles Shelby voice models)
    * @param modelUri Model URI (e.g., "eleven:voiceId" or "shelby://...")
    * @param text Text to convert to speech
-   * @param requesterAccount Aptos account address (required for Shelby URIs)
+   * @param requesterAccount Algorand address (required for Shelby URIs)
    * @returns Audio blob
    */
   async generateTTS(modelUri: string, text: string, requesterAccount?: string): Promise<Blob> {
@@ -76,7 +76,7 @@ export const backendApi = {
 
   /**
    * Calculate payment breakdown
-   * @param amount Amount in APT
+   * @param amount Amount in ALGO
    * @returns Payment breakdown with fees
    */
   async getPaymentBreakdown(amount: number) {
@@ -101,7 +101,7 @@ export const backendApi = {
    * @param audioFile Audio file to process
    * @param name Voice name
    * @param description Voice description (optional)
-   * @param owner Aptos account address (owner)
+   * @param owner Algorand address (owner)
    * @param voiceId Unique voice identifier
    * @returns Bundle metadata (config and meta)
    */
@@ -145,7 +145,7 @@ export const backendApi = {
   /**
    * Upload voice bundle to Shelby
    * @param uri Shelby URI
-   * @param account Aptos account address
+   * @param account Algorand address
    * @param bundleFiles Bundle files (embedding.bin, config.json, meta.json, preview.wav)
    * @returns Upload result with final URI
    */
@@ -173,7 +173,7 @@ export const backendApi = {
       method: 'POST',
       headers: {
         'X-Shelby-Uri': uri,
-        'X-Aptos-Account': account,
+        'X-Algorand-Address': account,
       },
       body: formData,
     });
@@ -196,7 +196,7 @@ export const backendApi = {
    * Download file from Shelby
    * @param uri Shelby URI
    * @param filename File to download (e.g., "meta.json", "embedding.bin", "preview.wav")
-   * @param requesterAccount Aptos account address (for access verification)
+   * @param requesterAccount Algorand address (for access verification)
    * @returns File data as ArrayBuffer
    */
   async downloadFromShelby(uri: string, filename: string, requesterAccount?: string): Promise<ArrayBuffer> {
@@ -225,7 +225,7 @@ export const backendApi = {
   /**
    * Delete voice bundle from Shelby
    * @param uri Shelby URI
-   * @param account Aptos account address (owner)
+   * @param account Algorand address (owner)
    * @returns Delete result
    */
   async deleteFromShelby(uri: string, account: string) {

@@ -10,7 +10,7 @@
  */
 
 import { useState } from "react";
-import { useAptosWallet } from "@/hooks/useAptosWallet";
+import { useAlgorandWallet } from "@/hooks/useAlgorandWallet";
 import { useVoiceRegister } from "@/hooks/useVoiceRegister";
 import { useVoiceMetadata } from "@/hooks/useVoiceMetadata";
 import { usePayForInference } from "@/hooks/usePayForInference";
@@ -21,10 +21,10 @@ import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Wallet, CheckCircle2, Play } from "lucide-react";
 import { toast } from "sonner";
-import { formatAddress } from "@/lib/aptos";
+import { formatAddress } from "@/lib/algorand";
 
 export function CompleteIntegrationExample() {
-  const { connect, disconnect, isConnected, address } = useAptosWallet();
+  const { connect, disconnect, isConnected, address } = useAlgorandWallet();
   const { registerVoice, isRegistering } = useVoiceRegister();
   const { payForInference, isPaying } = usePayForInference();
 
@@ -89,12 +89,12 @@ export function CompleteIntegrationExample() {
             <CardHeader>
               <CardTitle>Connect Your Wallet</CardTitle>
               <CardDescription>
-                Connect your Aptos wallet to get started
+                Connect your Algorand wallet to get started
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               {!isConnected ? (
-                <Button onClick={() => connect("Petra")} className="w-full" size="lg">
+                <Button onClick={() => connect()} className="w-full" size="lg">
                   <Wallet className="mr-2 h-5 w-5" />
                   Connect Wallet
                 </Button>
@@ -159,7 +159,7 @@ export function CompleteIntegrationExample() {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="price">Price Per Use (APT)</Label>
+                <Label htmlFor="price">Price Per Use (ALGO)</Label>
                 <Input
                   id="price"
                   type="number"
@@ -204,7 +204,7 @@ export function CompleteIntegrationExample() {
                   id="voice-address"
                   value={selectedVoiceAddress}
                   onChange={(e) => setSelectedVoiceAddress(e.target.value)}
-                  placeholder="0x..."
+                  placeholder="ABCD...WXYZ"
                 />
               </div>
 
@@ -212,7 +212,7 @@ export function CompleteIntegrationExample() {
                 <div className="p-4 bg-muted rounded-lg space-y-2">
                   <h3 className="font-semibold">{selectedVoice.name}</h3>
                   <p className="text-sm text-muted-foreground">
-                    Price: {selectedVoice.pricePerUse} APT
+                    Price: {selectedVoice.pricePerUse} ALGO
                   </p>
                   <p className="text-sm text-muted-foreground">
                     Rights: {selectedVoice.rights}
@@ -259,7 +259,7 @@ export function CompleteIntegrationExample() {
                 ) : (
                   <>
                     <Play className="mr-2 h-4 w-4" />
-                    Pay & Generate ({selectedVoice?.pricePerUse || 0} APT)
+                    Pay & Generate ({selectedVoice?.pricePerUse || 0} ALGO)
                   </>
                 )}
               </Button>

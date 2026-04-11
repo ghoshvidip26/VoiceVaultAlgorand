@@ -33,8 +33,8 @@ export function Footer() {
           <div className="lg:col-span-2">
             <Link to="/" className="flex items-center gap-2 mb-4">
               <img 
-                src="/aptos.jpeg" 
-                alt="Aptos Logo" 
+                src="/logo.png" 
+                alt="VoiceVault Logo" 
                 className="h-10 w-10 rounded-full object-cover"
               />
               <span className="font-display text-xl font-bold gradient-text">VoiceVault</span>
@@ -108,10 +108,10 @@ export function Footer() {
 
         <div className="border-t border-border/50 mt-12 pt-8 flex flex-col md:flex-row justify-between items-center gap-4">
           <p className="text-sm text-muted-foreground">
-            Built at Build on Aptos, Bangalore, 2025
+            Built for the Algorand creator economy
           </p>
           <p className="text-sm text-muted-foreground">
-            Built on <span className="text-primary">Aptos</span>
+            Built on <span className="text-primary">Algorand</span>
           </p>
         </div>
       </div>

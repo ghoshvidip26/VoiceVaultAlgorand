@@ -1,14 +1,14 @@
-import { useWallet as useAptosWalletAdapter } from "@aptos-labs/wallet-adapter-react";
+import { useAlgorandWallet } from "./useAlgorandWallet";
 
 /**
  * Thin wrapper to keep the existing `useWallet` API shape,
- * now using the Aptos wallet adapter (e.g. Petra).
+ * now using the Algorand wallet adapter (Pera).
  */
 export function useWallet() {
-  const wallet = useAptosWalletAdapter();
+  const wallet = useAlgorandWallet();
 
   return {
-    connected: wallet.connected && !!wallet.account?.address,
-    account: wallet.account,
+    connected: wallet.isConnected,
+    account: wallet.address ? { address: wallet.address } : null,
   };
 }

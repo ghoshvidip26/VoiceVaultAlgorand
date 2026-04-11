@@ -2,7 +2,7 @@
  * Shelby decentralized blob storage client
  * Handles voice model storage and retrieval via Shelby RPC
  * 
- * Shelby URI format: shelby://<aptos_account>/<namespace>/<voice_id>
+ * Shelby URI format: shelby://<algorand_address>/<namespace>/<voice_id>
  * 
  * All reads go through Shelby RPC, never directly to Storage Providers
  */
@@ -38,7 +38,7 @@ export interface VoiceMetadata {
 
 export interface ShelbyUri {
   protocol: "shelby";
-  account: string; // Aptos account address
+  account: string; // Algorand address
   namespace: string; // e.g., "voices"
   voiceId: string;
 }
@@ -109,7 +109,7 @@ export class ShelbyClient {
    * Upload a voice bundle to Shelby
    * Returns the immutable Shelby URI
    * 
-   * @param account Aptos account address (owner)
+   * @param account Algorand address (owner)
    * @param namespace Namespace (typically "voices")
    * @param voiceId Unique voice identifier
    * @param bundle Voice bundle to upload
@@ -149,7 +149,7 @@ export class ShelbyClient {
       body: formData,
       headers: {
         "X-Shelby-Uri": uri,
-        "X-Aptos-Account": account,
+        "X-Algorand-Address": account,
       },
     });
 

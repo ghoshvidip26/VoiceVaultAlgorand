@@ -17,7 +17,7 @@ const steps = [
     step: "03",
     icon: Link2,
     title: "Mint On-Chain",
-    description: "Your voice identity is minted on Aptos blockchain, creating permanent ownership proof.",
+    description: "Your voice identity is minted on Algorand, creating permanent ownership proof.",
   },
   {
     step: "04",

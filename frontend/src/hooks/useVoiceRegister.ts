@@ -1,99 +1,76 @@
 import { useState } from "react";
-import { useAptosWallet, aptosClient } from "./useAptosWallet";
-import { CONTRACTS, aptToOctas } from "@/lib/contracts";
+import algosdk from "algosdk";
 import { toast } from "sonner";
-import { InputTransactionData } from "@aptos-labs/wallet-adapter-react";
+import { useAlgorandWallet } from "./useAlgorandWallet";
+import { CONTRACTS, algoToMicroAlgo } from "@/lib/contracts";
+import { algodClient } from "@/lib/algorand";
 
 export interface VoiceRegistrationData {
   name: string;
   modelUri: string;
   rights: string;
-  pricePerUse: number; // in APT
+  pricePerUse: number; // in ALGO
 }
 
 export function useVoiceRegister() {
-  const { signAndSubmitTransaction, isConnected, address } = useAptosWallet();
+  const { isConnected, address, transactionSigner } = useAlgorandWallet();
   const [isRegistering, setIsRegistering] = useState(false);
 
   const registerVoice = async (data: VoiceRegistrationData) => {
-    if (!isConnected || !address) {
+    if (!isConnected || !address || !transactionSigner) {
       toast.error("Please connect your wallet first");
+      return null;
+    }
+
+    if (CONTRACTS.VOICE.appId <= 0) {
+      toast.error("Voice app is not configured", {
+        description: "Set VITE_VOICE_APP_ID in the frontend environment.",
+      });
       return null;
     }
 
     setIsRegistering(true);
 
     try {
-      // Convert price to Octas
-      const priceInOctas = aptToOctas(data.pricePerUse);
+      const priceInMicroAlgo = Number(algoToMicroAlgo(data.pricePerUse));
+      const suggestedParams = await algodClient.getTransactionParams().do();
 
-      // Build transaction payload with gas parameters
-      // Aptos requires maxGasAmount to be at least the minimum transaction gas (typically ~1000-2000)
-      // Setting a higher value to ensure it covers the transaction cost
-      const transaction: InputTransactionData = {
-        data: {
-          function: `${CONTRACTS.VOICE_IDENTITY.address}::${CONTRACTS.VOICE_IDENTITY.module}::register_voice`,
-          typeArguments: [],
-          functionArguments: [
-            data.name,
-            data.modelUri,
-            data.rights,
-            priceInOctas.toString(),
-          ],
-        },
-      };
+      const composer = new algosdk.AtomicTransactionComposer();
+      composer.addMethodCall({
+        appID: CONTRACTS.VOICE.appId,
+        method: algosdk.ABIMethod.fromSignature("registerVoice(string,string,string,uint64)void"),
+        methodArgs: [data.name, data.modelUri, data.rights, priceInMicroAlgo],
+        sender: address,
+        suggestedParams,
+        signer: transactionSigner,
+      });
 
-      // Sign and submit transaction
       toast.info("Please approve the transaction in your wallet...");
-      const response = await signAndSubmitTransaction(transaction);
-      
-      // The response contains the transaction hash
-      const txHash = response.hash;
-      
-      // Wait for transaction confirmation on-chain
-      toast.info("Waiting for transaction confirmation on-chain...");
-      
-      try {
-        // Wait for transaction to be confirmed
-        await aptosClient.waitForTransaction({
-          transactionHash: txHash,
-        });
-        
-        toast.success("Voice registered on-chain successfully!", {
-          description: `Transaction confirmed: ${txHash.slice(0, 8)}...${txHash.slice(-6)}`,
-        });
+      const result = await composer.execute(algodClient, 4);
+      const transactionId = result.txIDs.at(-1) ?? result.txIDs[0];
 
-        return {
-          success: true,
-          transactionHash: txHash,
-        };
-      } catch (waitError: any) {
-        // Transaction was submitted but confirmation wait failed
-        // This might be okay - transaction could still be processing
-        console.warn("Transaction wait timeout, but transaction was submitted:", waitError);
-        toast.success("Transaction submitted! Waiting for confirmation...", {
-          description: `TX: ${txHash.slice(0, 8)}...${txHash.slice(-6)}`,
-        });
-        
-        return {
-          success: true,
-          transactionHash: txHash,
-        };
-      }
+      toast.success("Voice registered on-chain successfully!", {
+        description: `Transaction confirmed: ${transactionId.slice(0, 8)}...${transactionId.slice(-6)}`,
+      });
+
+      return {
+        success: true,
+        transactionId,
+        transactionHash: transactionId,
+      };
     } catch (error: any) {
       console.error("Voice registration error:", error);
-      
-      // Handle contract-specific error codes
+
       let errorMessage = error.message || "Unknown error occurred";
-      
-      if (errorMessage.includes("ERROR_VOICE_ALREADY_EXISTS") || errorMessage.includes("1")) {
+
+      if (errorMessage.includes("already exists")) {
         errorMessage = "Voice already registered for this wallet address. Only one voice per address is allowed.";
-      } else if (errorMessage.includes("user rejected") || errorMessage.includes("User rejected")) {
+      } else if (errorMessage.includes("cancelled") || errorMessage.includes("rejected")) {
         errorMessage = "Transaction was rejected by user";
       } else if (errorMessage.includes("insufficient")) {
-        errorMessage = "Insufficient balance. Please ensure you have enough APT to cover transaction fees.";
+        errorMessage = "Insufficient balance. Please ensure you have enough ALGO to cover transaction fees.";
       }
-      
+
       toast.error("Registration failed", {
         description: errorMessage,
         duration: 7000,

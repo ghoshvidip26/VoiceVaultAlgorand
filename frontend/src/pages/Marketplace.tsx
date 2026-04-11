@@ -2,16 +2,15 @@ import { useState, useEffect } from "react";
 import { Navbar } from "@/components/layout/Navbar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Search, SlidersHorizontal, TrendingUp, Clock, Star, RefreshCw } from "lucide-react";
+import { Search, SlidersHorizontal, TrendingUp, Clock, Star, RefreshCw, InfoIcon } from "lucide-react";
 import { Helmet } from "react-helmet-async";
 import { VoiceMetadata } from "@/hooks/useVoiceMetadata";
 import { useVoicesWithShelbyMetadata } from "@/hooks/useVoicesWithShelbyMetadata";
 import { VoiceMarketplaceCard } from "@/components/voice/VoiceMarketplaceCard";
 import { toast } from "sonner";
 import { getVoiceAddresses } from "@/lib/voiceRegistry";
-import { useAptosWallet } from "@/hooks/useAptosWallet";
+import { useAlgorandWallet } from "@/hooks/useAlgorandWallet";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { InfoIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 const filterTabs = [
@@ -21,31 +20,21 @@ const filterTabs = [
 ];
 
 const Marketplace = () => {
-  const { address } = useAptosWallet();
+  const { address } = useAlgorandWallet();
   const [searchQuery, setSearchQuery] = useState("");
   const [activeFilter, setActiveFilter] = useState("trending");
   const [voiceAddresses, setVoiceAddresses] = useState<string[]>([]);
 
-  // Load voice addresses from localStorage registry
-  // Note: These are addresses that have registered voices on-chain
-  // The actual voice metadata is fetched from Aptos (on-chain) and Shelby (meta.json)
-  // In the future, we could query blockchain events to discover all registered voices
   useEffect(() => {
     const addresses = getVoiceAddresses();
     setVoiceAddresses(addresses);
   }, []);
 
-  // Fetch voices with metadata from both Aptos (on-chain) and Shelby (meta.json)
-  // Aptos provides: owner, price, rights, modelUri
-  // Shelby provides: name, description, preview audio
   const { voices: enrichedVoices, isLoading: isLoadingVoices } = useVoicesWithShelbyMetadata(voiceAddresses);
-  
-  // Only show voices registered on-chain (no mock data)
   const voices = enrichedVoices;
   const isLoading = isLoadingVoices;
 
   const handlePurchaseSuccess = async (voice: VoiceMetadata, txHash: string) => {
-    // Track purchased voice in localStorage
     const { addPurchasedVoice } = await import("@/lib/purchasedVoices");
     addPurchasedVoice({
       voiceId: voice.voiceId,
@@ -54,7 +43,7 @@ const Marketplace = () => {
       owner: voice.owner,
       price: voice.pricePerUse,
       purchasedAt: Date.now(),
-      txHash: txHash,
+      txHash,
     });
 
     toast.success("Voice purchased successfully!", {
@@ -79,13 +68,12 @@ const Marketplace = () => {
         <Navbar />
         <main className="pt-32 pb-16">
           <div className="container mx-auto px-4">
-            {/* Header */}
             <div className="max-w-2xl mb-8">
               <h1 className="font-display text-4xl md:text-5xl font-bold mb-4">
                 Voice <span className="gradient-text">Marketplace</span>
               </h1>
               <p className="text-lg text-muted-foreground">
-                Discover unique AI voice models registered on Aptos blockchain. License instantly, pay per use.
+                Discover unique AI voice models registered on Algorand. License instantly and pay per use.
               </p>
               <div className="flex items-center gap-2 mt-2">
                 <p className="text-sm text-muted-foreground">
@@ -93,15 +81,12 @@ const Marketplace = () => {
                 </p>
                 {voices.length > 0 && (
                   <span className="text-xs text-muted-foreground">
-                    • All voices verified on Aptos blockchain
+                    • All voices verified on Algorand
                   </span>
                 )}
               </div>
             </div>
 
-
-
-            {/* Search and Filters */}
             <div className="flex flex-col md:flex-row gap-4 mb-8">
               <div className="relative flex-1">
                 <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
@@ -112,12 +97,11 @@ const Marketplace = () => {
                   className="pl-12 h-12 bg-card border-border"
                 />
               </div>
-              <Button 
-                variant="outline" 
+              <Button
+                variant="outline"
                 className="h-12"
                 onClick={() => {
                   const addresses = getVoiceAddresses();
-                  // Create new array reference to trigger re-fetch
                   setVoiceAddresses([...addresses]);
                   if (addresses.length > 0) {
                     toast.info(`Refreshed: Found ${addresses.length} registered voice${addresses.length !== 1 ? 's' : ''} in registry`);
@@ -136,17 +120,15 @@ const Marketplace = () => {
               </Button>
             </div>
 
-            {/* Filter Tabs */}
             <div className="flex gap-2 mb-8 overflow-x-auto pb-2">
               {filterTabs.map((tab) => (
                 <button
                   key={tab.id}
                   onClick={() => setActiveFilter(tab.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${
-                    activeFilter === tab.id
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-muted text-muted-foreground hover:bg-muted/80"
-                  }`}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg font-medium transition-all ${activeFilter === tab.id
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-muted text-muted-foreground hover:bg-muted/80"
+                    }`}
                 >
                   <tab.icon className="h-4 w-4" />
                   {tab.label}
@@ -154,7 +136,6 @@ const Marketplace = () => {
               ))}
             </div>
 
-            {/* Voice Grid */}
             {isLoading ? (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {[1, 2, 3].map((i) => (
@@ -168,7 +149,7 @@ const Marketplace = () => {
                   <strong>No voices registered on-chain yet.</strong>
                   <br />
                   <span className="text-sm mt-2 block">
-                    Be the first to register your voice on Aptos blockchain!
+                    Be the first to register your voice on Algorand!
                   </span>
                   <span className="text-xs text-muted-foreground mt-2 block">
                     Go to the Upload page to register your voice on-chain and make it available in the marketplace.

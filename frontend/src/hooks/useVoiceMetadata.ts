@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
-import { aptosClient } from "./useAptosWallet";
-import { CONTRACTS, octasToApt } from "@/lib/contracts";
-import { parseMoveString } from "@/lib/moveUtils";
+import { useEffect, useState } from "react";
+import algosdk from "algosdk";
+import { algodClient } from "@/lib/algorand";
+import { CONTRACTS, microAlgoToAlgo } from "@/lib/contracts";
 
 export interface VoiceMetadata {
   owner: string;
@@ -9,8 +9,101 @@ export interface VoiceMetadata {
   name: string;
   modelUri: string;
   rights: string;
-  pricePerUse: number; // in APT
+  pricePerUse: number; // in ALGO
   createdAt: number; // timestamp
+}
+
+interface AppStateValue {
+  type: number;
+  bytes?: string;
+  uint?: number;
+}
+
+interface AppStateEntry {
+  key: string;
+  value: AppStateValue;
+}
+
+const encoder = new TextEncoder();
+const decoder = new TextDecoder();
+
+function bytesToBase64(bytes: Uint8Array): string {
+  let binary = "";
+  bytes.forEach((byte) => {
+    binary += String.fromCharCode(byte);
+  });
+  return btoa(binary);
+}
+
+function base64ToBytes(base64: string): Uint8Array {
+  const binary = atob(base64);
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0));
+}
+
+function decodeStateString(base64?: string): string {
+  if (!base64) return "";
+  return decoder.decode(base64ToBytes(base64));
+}
+
+function buildAddressScopedKey(prefix: string, ownerAddress: string): string {
+  const prefixBytes = encoder.encode(prefix);
+  const addressBytes = algosdk.decodeAddress(ownerAddress).publicKey;
+  const keyBytes = new Uint8Array(prefixBytes.length + addressBytes.length);
+
+  keyBytes.set(prefixBytes);
+  keyBytes.set(addressBytes, prefixBytes.length);
+
+  return bytesToBase64(keyBytes);
+}
+
+function getStateValue(globalState: AppStateEntry[], key: string): AppStateValue | undefined {
+  return globalState.find((entry) => entry.key === key)?.value;
+}
+
+export async function getVoiceAppGlobalState(): Promise<AppStateEntry[]> {
+  if (CONTRACTS.VOICE.appId <= 0) {
+    return [];
+  }
+
+  const app = await algodClient.getApplicationByID(CONTRACTS.VOICE.appId).do();
+  return (app.params?.["global-state"] ?? []) as AppStateEntry[];
+}
+
+export async function fetchVoiceMetadata(
+  ownerAddress: string,
+  globalState?: AppStateEntry[]
+): Promise<VoiceMetadata | null> {
+  try {
+    if (!ownerAddress || CONTRACTS.VOICE.appId <= 0) {
+      return null;
+    }
+
+    const state = globalState ?? (await getVoiceAppGlobalState());
+    const exists = getStateValue(state, buildAddressScopedKey("voice_exists_", ownerAddress));
+
+    if (!exists || Number(exists.uint ?? 0) !== 1) {
+      return null;
+    }
+
+    const voiceId = getStateValue(state, buildAddressScopedKey("voice_id_", ownerAddress));
+    const name = getStateValue(state, buildAddressScopedKey("voice_name_", ownerAddress));
+    const modelUri = getStateValue(state, buildAddressScopedKey("voice_uri_", ownerAddress));
+    const rights = getStateValue(state, buildAddressScopedKey("voice_rights_", ownerAddress));
+    const price = getStateValue(state, buildAddressScopedKey("voice_price_", ownerAddress));
+    const createdAt = getStateValue(state, buildAddressScopedKey("voice_created_", ownerAddress));
+
+    return {
+      owner: ownerAddress,
+      voiceId: String(voiceId?.uint ?? 0),
+      name: decodeStateString(name?.bytes),
+      modelUri: decodeStateString(modelUri?.bytes),
+      rights: decodeStateString(rights?.bytes),
+      pricePerUse: microAlgoToAlgo(BigInt(price?.uint ?? 0)),
+      createdAt: Number(createdAt?.uint ?? 0),
+    };
+  } catch {
+    return null;
+  }
 }
 
 /**
@@ -32,50 +125,11 @@ export function useVoiceMetadata(ownerAddress: string | null) {
       setError(null);
 
       try {
-        // Query the VoiceIdentity resource directly (since get_metadata is not a view function)
-        const resourceType = `${CONTRACTS.VOICE_IDENTITY.address}::${CONTRACTS.VOICE_IDENTITY.module}::VoiceIdentity`;
-        
-        let resources;
-        try {
-          resources = await aptosClient.getAccountResources({
-            accountAddress: ownerAddress,
-          });
-        } catch (apiError: any) {
-          // Account might not exist or have no resources - this is normal
-          if (apiError.message?.includes("Account not found") || apiError.statusCode === 404) {
-            setMetadata(null);
-            setError(null);
-            return;
-          }
-          throw apiError;
-        }
-
-        const voiceResource = resources.find((r) => r.type === resourceType);
-
-        if (!voiceResource || !voiceResource.data) {
-          // Resource doesn't exist - this is normal if voice hasn't been registered yet
-          setMetadata(null);
-          setError(null); // Don't treat as error, just no voice registered
-          return;
-        }
-
-        const data = voiceResource.data as any;
-
-        setMetadata({
-          owner: data.owner as string,
-          voiceId: data.voice_id?.toString() || "0",
-          name: parseMoveString(data.name),
-          modelUri: parseMoveString(data.model_uri),
-          rights: parseMoveString(data.rights),
-          pricePerUse: octasToApt(Number(data.price_per_use || 0)),
-          createdAt: Number(data.created_at || 0),
-        });
+        const result = await fetchVoiceMetadata(ownerAddress);
+        setMetadata(result);
       } catch (err: any) {
-        // Only log actual errors, not "resource not found" cases
-        if (!err.message?.includes("not found") && !err.message?.includes("Account not found")) {
-          console.error("Error fetching voice metadata:", err);
-        }
-        setError(null); // Don't show error for missing resources
+        console.error("Error fetching voice metadata:", err);
+        setError(err.message || "Failed to fetch voice metadata");
         setMetadata(null);
       } finally {
         setIsLoading(false);
@@ -88,43 +142,12 @@ export function useVoiceMetadata(ownerAddress: string | null) {
   return { metadata, isLoading, error };
 }
 
-/**
- * Fetch voice ID for a specific owner
- */
 export async function getVoiceId(ownerAddress: string): Promise<string | null> {
-  try {
-    const resourceType = `${CONTRACTS.VOICE_IDENTITY.address}::${CONTRACTS.VOICE_IDENTITY.module}::VoiceIdentity`;
-    const resources = await aptosClient.getAccountResources({
-      accountAddress: ownerAddress,
-    });
-
-    const voiceResource = resources.find((r) => r.type === resourceType);
-    if (!voiceResource || !voiceResource.data) {
-      return null;
-    }
-
-    const data = voiceResource.data as any;
-    return data.voice_id?.toString() || null;
-  } catch (error) {
-    console.error("Error fetching voice ID:", error);
-    return null;
-  }
+  const metadata = await fetchVoiceMetadata(ownerAddress);
+  return metadata?.voiceId ?? null;
 }
 
-/**
- * Check if a voice exists for an owner address
- */
 export async function checkVoiceExists(ownerAddress: string): Promise<boolean> {
-  try {
-    const resourceType = `${CONTRACTS.VOICE_IDENTITY.address}::${CONTRACTS.VOICE_IDENTITY.module}::VoiceIdentity`;
-    const resources = await aptosClient.getAccountResources({
-      accountAddress: ownerAddress,
-    });
-
-    return resources.some((r) => r.type === resourceType);
-  } catch (error) {
-    // If function fails, voice likely doesn't exist
-    console.error("Error checking voice existence:", error);
-    return false;
-  }
+  const metadata = await fetchVoiceMetadata(ownerAddress);
+  return metadata !== null;
 }

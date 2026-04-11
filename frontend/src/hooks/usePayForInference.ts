@@ -1,152 +1,141 @@
 import { useState } from "react";
-import { useAptosWallet } from "./useAptosWallet";
-import { CONTRACTS, aptToOctas, calculatePaymentBreakdown } from "@/lib/contracts";
+import algosdk from "algosdk";
 import { toast } from "sonner";
-import { InputTransactionData } from "@aptos-labs/wallet-adapter-react";
+import { useAlgorandWallet } from "./useAlgorandWallet";
+import {
+  CONTRACTS,
+  algoToMicroAlgo,
+  calculatePaymentBreakdown,
+  microAlgoToAlgo,
+} from "@/lib/contracts";
+import { algodClient, isValidAlgorandAddress } from "@/lib/algorand";
 
 export interface PaymentOptions {
-    creatorAddress: string;
-    amount: number; // in APT
-    royaltyRecipient?: string; // Optional: if provided, uses royalty split
-    onSuccess?: (txHash: string) => void;
-    onError?: (error: Error) => void;
+  creatorAddress: string;
+  amount: number; // in ALGO
+  royaltyRecipient?: string;
+  onSuccess?: (txId: string) => void;
+  onError?: (error: Error) => void;
 }
 
 export function usePayForInference() {
-    const { signAndSubmitTransaction, isConnected, address } = useAptosWallet();
-    const [isPaying, setIsPaying] = useState(false);
+  const { isConnected, address, transactionSigner } = useAlgorandWallet();
+  const [isPaying, setIsPaying] = useState(false);
 
-    /**
-     * Pay for voice inference - SIMPLIFIED VERSION
-     * Uses direct coin transfer instead of contract to avoid initialization issues
-     */
-    const payForInference = async (options: PaymentOptions) => {
-        if (!isConnected || !address) {
-            toast.error("Please connect your wallet first");
-            return null;
-        }
+  const payForInference = async (options: PaymentOptions) => {
+    if (!isConnected || !address || !transactionSigner) {
+      toast.error("Please connect your wallet first");
+      return null;
+    }
 
-        const { creatorAddress, amount, royaltyRecipient, onSuccess, onError } = options;
+    const { creatorAddress, amount, royaltyRecipient, onSuccess, onError } = options;
+    const royaltyAddress = royaltyRecipient || creatorAddress;
 
-        setIsPaying(true);
+    if (CONTRACTS.PAYMENT.appId <= 0) {
+      toast.error("Payment app is not configured", {
+        description: "Set VITE_PAYMENT_APP_ID in the frontend environment.",
+      });
+      return null;
+    }
 
-        try {
-            const amountInOctas = aptToOctas(amount);
-            const breakdown = calculatePaymentBreakdown(amountInOctas);
+    if (!isValidAlgorandAddress(creatorAddress) || !isValidAlgorandAddress(royaltyAddress)) {
+      toast.error("Invalid recipient address supplied");
+      return null;
+    }
 
-            // Debug logging
-            console.log("=== Payment Breakdown ===");
-            console.log("Total amount:", amount, "APT =", amountInOctas, "Octas");
-            console.log("Platform fee:", breakdown.platformFee, "Octas =", (breakdown.platformFee / 100_000_000).toFixed(6), "APT");
-            console.log("Royalty:", breakdown.royaltyAmount, "Octas =", (breakdown.royaltyAmount / 100_000_000).toFixed(6), "APT");
-            console.log("Creator:", breakdown.creatorAmount, "Octas =", (breakdown.creatorAmount / 100_000_000).toFixed(6), "APT");
-            console.log("Sum check:", (breakdown.platformFee + breakdown.royaltyAmount + breakdown.creatorAmount), "should equal", amountInOctas);
+    if (!isValidAlgorandAddress(CONTRACTS.PLATFORM_ADDRESS)) {
+      toast.error("Platform address is not configured", {
+        description: "Set VITE_PLATFORM_ADDRESS in the frontend environment.",
+      });
+      return null;
+    }
 
-            // Show breakdown before signing
-            toast.info("Payment Breakdown", {
-                description: `Total: ${amount} APT | Platform: ${(breakdown.platformFee / 100_000_000).toFixed(4)} APT | Royalty: ${(breakdown.royaltyAmount / 100_000_000).toFixed(4)} APT | Creator: ${(breakdown.creatorAmount / 100_000_000).toFixed(4)} APT`,
-                duration: 5000,
-            });
+    setIsPaying(true);
 
-            // SIMPLIFIED: Direct coin transfers instead of using the contract
-            // This avoids the PaymentEvents initialization issue
+    try {
+      const totalMicroAlgo = algoToMicroAlgo(amount);
+      const breakdown = calculatePaymentBreakdown(totalMicroAlgo);
+      const suggestedParams = await algodClient.getTransactionParams().do();
 
-            // Transfer 1: Platform fee
-            const platformTx: InputTransactionData = {
-                data: {
-                    function: "0x1::aptos_account::transfer",
-                    typeArguments: [],
-                    functionArguments: [
-                        CONTRACTS.PLATFORM_ADDRESS,
-                        breakdown.platformFee.toString(),
-                    ],
-                },
-            };
+      toast.info("Payment Breakdown", {
+        description: `Total: ${amount} ALGO | Platform: ${microAlgoToAlgo(breakdown.platformFee).toFixed(4)} ALGO | Royalty: ${microAlgoToAlgo(breakdown.royalty).toFixed(4)} ALGO | Creator: ${microAlgoToAlgo(breakdown.creatorAmount).toFixed(4)} ALGO`,
+        duration: 5000,
+      });
 
-            toast.info("Step 1/3: Paying platform fee...");
-            await signAndSubmitTransaction(platformTx);
+      const paymentTxn = algosdk.makePaymentTxnWithSuggestedParamsFromObject({
+        sender: address,
+        receiver: algosdk.getApplicationAddress(CONTRACTS.PAYMENT.appId),
+        amount: Number(totalMicroAlgo),
+        suggestedParams,
+      });
 
-            // Transfer 2: Royalty
-            const royaltyTx: InputTransactionData = {
-                data: {
-                    function: "0x1::aptos_account::transfer",
-                    typeArguments: [],
-                    functionArguments: [
-                        royaltyRecipient || creatorAddress,
-                        breakdown.royaltyAmount.toString(),
-                    ],
-                },
-            };
+      const composer = new algosdk.AtomicTransactionComposer();
+      composer.addTransaction({
+        txn: paymentTxn,
+        signer: transactionSigner,
+      });
+      composer.addMethodCall({
+        appID: CONTRACTS.PAYMENT.appId,
+        method: algosdk.ABIMethod.fromSignature("payWithRoyaltySplit(address,address,address,uint64)void"),
+        methodArgs: [
+          creatorAddress,
+          CONTRACTS.PLATFORM_ADDRESS,
+          royaltyAddress,
+          Number(totalMicroAlgo),
+        ],
+        sender: address,
+        suggestedParams: {
+          ...suggestedParams,
+          flatFee: true,
+          fee: 4000,
+        },
+        signer: transactionSigner,
+      });
 
-            toast.info("Step 2/3: Paying royalty...");
-            await signAndSubmitTransaction(royaltyTx);
+      const result = await composer.execute(algodClient, 4);
+      const transactionId = result.txIDs.at(-1) ?? result.txIDs[0];
 
-            // Transfer 3: Creator payment
-            const creatorTx: InputTransactionData = {
-                data: {
-                    function: "0x1::aptos_account::transfer",
-                    typeArguments: [],
-                    functionArguments: [
-                        creatorAddress,
-                        breakdown.creatorAmount.toString(),
-                    ],
-                },
-            };
+      toast.success("Payment successful!", {
+        description: `Atomic payment confirmed: ${transactionId.slice(0, 8)}...${transactionId.slice(-6)}`,
+      });
 
-            toast.info("Step 3/3: Paying creator...");
-            const response = await signAndSubmitTransaction(creatorTx);
+      onSuccess?.(transactionId);
 
-            const txHash = response.hash;
+      return {
+        success: true,
+        transactionId,
+        transactionHash: transactionId,
+      };
+    } catch (error: any) {
+      console.error("Payment error:", error);
+      const errorMessage = error.message || "Payment failed";
 
-            toast.success("Payment successful!", {
-                description: `All payments completed! Final TX: ${txHash.slice(0, 8)}...${txHash.slice(-6)}`,
-            });
+      toast.error("Payment failed", {
+        description: errorMessage,
+      });
 
-            // Call success callback
-            if (onSuccess) {
-                onSuccess(txHash);
-            }
+      onError?.(error);
+      return null;
+    } finally {
+      setIsPaying(false);
+    }
+  };
 
-            return {
-                success: true,
-                transactionHash: txHash,
-            };
-        } catch (error: any) {
-            console.error("Payment error:", error);
-            const errorMessage = error.message || "Payment failed";
-
-            toast.error("Payment failed", {
-                description: errorMessage,
-            });
-
-            if (onError) {
-                onError(error);
-            }
-
-            return null;
-        } finally {
-            setIsPaying(false);
-        }
-    };
-
-    /**
-     * Get payment breakdown for display before transaction
-     */
-    const getPaymentBreakdown = (amount: number) => {
-        const amountInOctas = aptToOctas(amount);
-        const breakdown = calculatePaymentBreakdown(amountInOctas);
-
-        return {
-            total: amount,
-            platformFee: breakdown.platformFee / 100_000_000,
-            royalty: breakdown.royaltyAmount / 100_000_000,
-            creator: breakdown.creatorAmount / 100_000_000,
-        };
-    };
+  const getPaymentBreakdown = (amount: number) => {
+    const amountInMicroAlgo = algoToMicroAlgo(amount);
+    const breakdown = calculatePaymentBreakdown(amountInMicroAlgo);
 
     return {
-        payForInference,
-        getPaymentBreakdown,
-        isPaying,
+      total: amount,
+      platformFee: microAlgoToAlgo(breakdown.platformFee),
+      royalty: microAlgoToAlgo(breakdown.royalty),
+      creator: microAlgoToAlgo(breakdown.creatorAmount),
     };
+  };
+
+  return {
+    payForInference,
+    getPaymentBreakdown,
+    isPaying,
+  };
 }

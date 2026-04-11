@@ -29,7 +29,7 @@ app.add_middleware(
 # ==================== Unified TTS Endpoint ====================
 
 # 5️⃣ Unified TTS endpoint - handles Shelby voice model URIs
-# NOTE: This endpoint verifies Aptos access for Shelby URIs before loading models
+# NOTE: This endpoint verifies Algorand access for Shelby URIs before loading models
 @app.post("/api/tts/generate")
 async def tts_generate(request: Request):
     try:
@@ -94,18 +94,18 @@ async def tts_generate(request: Request):
 async def payment_breakdown(request: Request):
     try:
         data = await request.json()
-        amount = data.get("amount")  # Amount in APT
+        amount = data.get("amount")  # Amount in ALGO
 
         if not isinstance(amount, (int, float)) or amount <= 0:
             return JSONResponse({"error": "Invalid amount. Must be a positive number"}, status_code=400)
 
-        # Convert APT to Octas (1 APT = 100,000,000 Octas)
-        amount_in_octas = math.floor(amount * 100_000_000)
+        # Convert ALGO to microALGO (1 ALGO = 1,000,000 microALGO)
+        amount_in_microalgo = math.floor(amount * 1_000_000)
 
         # Fixed platform fee: 2.5% (250 basis points)
         PLATFORM_FEE_BPS = 250
-        platform_fee = math.floor((amount_in_octas * 250) / 10_000)
-        remaining_after_platform = amount_in_octas - platform_fee
+        platform_fee = math.floor((amount_in_microalgo * 250) / 10_000)
+        remaining_after_platform = amount_in_microalgo - platform_fee
 
         # Fixed royalty: 10% (1000 basis points)
         ROYALTY_BPS = 1000
@@ -114,23 +114,23 @@ async def payment_breakdown(request: Request):
 
         return {
             "totalAmount": amount,
-            "totalAmountOctas": amount_in_octas,
+            "totalAmountMicroAlgo": amount_in_microalgo,
             "breakdown": {
                 "platformFee": {
-                    "amount": platform_fee / 100_000_000,
-                    "amountOctas": platform_fee,
+                    "amount": platform_fee / 1_000_000,
+                    "amountMicroAlgo": platform_fee,
                     "percentage": 2.5,
                     "basisPoints": PLATFORM_FEE_BPS,
                 },
                 "royalty": {
-                    "amount": royalty_amount / 100_000_000,
-                    "amountOctas": royalty_amount,
+                    "amount": royalty_amount / 1_000_000,
+                    "amountMicroAlgo": royalty_amount,
                     "percentage": 10,
                     "basisPoints": ROYALTY_BPS,
                 },
                 "creator": {
-                    "amount": creator_amount / 100_000_000,
-                    "amountOctas": creator_amount,
+                    "amount": creator_amount / 1_000_000,
+                    "amountMicroAlgo": creator_amount,
                 },
             },
         }
@@ -191,10 +191,10 @@ async def voice_process(
 async def shelby_upload(request: Request):
     try:
         uri = request.headers.get("x-shelby-uri")
-        account = request.headers.get("x-aptos-account")
+        account = request.headers.get("x-algorand-address")
 
         if not uri or not account:
-            return JSONResponse({"error": "Shelby URI and Aptos account are required"}, status_code=400)
+            return JSONResponse({"error": "Shelby URI and Algorand address are required"}, status_code=400)
 
         # Parse URI
         match = re.match(r"^shelby://([^/]+)/([^/]+)/(.+)$", uri)
@@ -301,7 +301,7 @@ async def shelby_delete(request: Request):
 
 
 # ==================== Voice Metadata from Blockchain ====================
-# Note: Voice registry is stored on Aptos blockchain (contract2)
+# Note: Voice registry is stored on Algorand (Voice app)
 # This endpoint can query blockchain directly if needed (future enhancement)
 # For now, frontend queries blockchain directly using useVoiceMetadata hook
 

@@ -1,8 +1,9 @@
 import { Button } from "@/components/ui/button";
-import { useAptosWallet } from "@/hooks/useAptosWallet";
+import { useAlgorandWallet } from "@/hooks/useAlgorandWallet";
+import { truncateAddress } from "@/lib/algorand";
 
 export const WalletConnectButton = () => {
-  const { isConnected, address, connect, disconnect, wallets } = useAptosWallet();
+  const { isConnected, address, connect, disconnect } = useAlgorandWallet();
 
   const handleClick = async () => {
     try {
@@ -11,29 +12,15 @@ export const WalletConnectButton = () => {
         return;
       }
 
-      const preferred =
-        wallets.find((w) => w.name.toLowerCase().includes("petra")) ?? wallets[0];
-
-      if (!preferred) {
-        console.error("No Aptos wallets available");
-        return;
-      }
-
-      await connect(preferred.name);
+      await connect();
     } catch (err) {
       console.error("Wallet connect/disconnect error:", err);
     }
   };
 
   return (
-    <Button
-      variant="default"
-      onClick={handleClick}
-      className="w-full"
-    >
-      {isConnected && address
-        ? `${address.slice(0, 6)}...${address.slice(-4)}`
-        : "Connect Petra"}
+    <Button variant="default" onClick={handleClick} className="w-full">
+      {isConnected && address ? truncateAddress(address, 6) : "Connect Pera"}
     </Button>
   );
 };

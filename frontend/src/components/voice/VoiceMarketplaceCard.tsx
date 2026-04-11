@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, ShoppingCart, Coins, Play } from "lucide-react";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { formatAddress } from "@/lib/aptos";
+import { formatAddress } from "@/lib/algorand";
 import { isShelbyUri } from "@/lib/shelby";
 import { isVoicePurchased } from "@/lib/purchasedVoices";
 
@@ -97,7 +97,7 @@ export function VoiceMarketplaceCard({ voice, onPaymentSuccess }: VoiceMarketpla
                 </Badge>
               )}
               <Badge variant="secondary">
-                {price.toFixed(4)} APT
+                {price.toFixed(4)} ALGO
               </Badge>
             </div>
           </CardTitle>
@@ -187,19 +187,19 @@ export function VoiceMarketplaceCard({ voice, onPaymentSuccess }: VoiceMarketpla
             <div className="border-t pt-4 space-y-2">
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Total Amount:</span>
-                <span className="font-medium">{displayBreakdown.total.toFixed(4)} APT</span>
+                <span className="font-medium">{displayBreakdown.total.toFixed(4)} ALGO</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Platform Fee (2.5%):</span>
-                <span>{displayBreakdown.platformFee.toFixed(4)} APT</span>
+                <span>{displayBreakdown.platformFee.toFixed(4)} ALGO</span>
               </div>
               <div className="flex justify-between items-center text-sm">
                 <span className="text-muted-foreground">Royalty (10%):</span>
-                <span>{displayBreakdown.royalty.toFixed(4)} APT</span>
+                <span>{displayBreakdown.royalty.toFixed(4)} ALGO</span>
               </div>
               <div className="flex justify-between items-center text-sm font-medium border-t pt-2">
                 <span>Creator Receives:</span>
-                <span className="text-primary">{displayBreakdown.creator.toFixed(4)} APT</span>
+                <span className="text-primary">{displayBreakdown.creator.toFixed(4)} ALGO</span>
               </div>
             </div>
           </div>
