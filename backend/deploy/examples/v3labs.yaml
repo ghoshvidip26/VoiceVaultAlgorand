@@ -1,0 +1,6 @@
+agent:
+  name: "Test Voice Agent"
+  endpoint: "ws://localhost:8765"  # ← Your test agent
+  protocol: "websocket"
+  visibility: "public"
+  price_per_minute: 0.0
