@@ -1,0 +1,277 @@
+#pragma version 8
+intcblock 0 1
+bytecblock 0x766f6963655f6578697374735f 0x766f6963655f69645f 0x 0x766f6963655f6e616d655f 0x766f6963655f7572695f 0x766f6963655f7269676874735f 0x766f6963655f70726963655f 0x766f6963655f637265617465645f 0x151f7c75
+txn NumAppArgs
+intc_0 // 0
+==
+bnz main_l10
+txna ApplicationArgs 0
+pushbytes 0x9ef53982 // "registerVoice(string,string,string,uint64)void"
+==
+bnz main_l9
+txna ApplicationArgs 0
+pushbytes 0xc2a6d094 // "getVoiceId(address)uint64"
+==
+bnz main_l8
+txna ApplicationArgs 0
+pushbytes 0xc751ee7f // "voice_exists(address)bool"
+==
+bnz main_l7
+txna ApplicationArgs 0
+pushbytes 0xe9d0efdb // "unregister_voice()void"
+==
+bnz main_l6
+err
+main_l6:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub unregistervoicecaster_7
+intc_1 // 1
+return
+main_l7:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub voiceexistscaster_6
+intc_1 // 1
+return
+main_l8:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub getVoiceIdcaster_5
+intc_1 // 1
+return
+main_l9:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub registerVoicecaster_4
+intc_1 // 1
+return
+main_l10:
+txn OnCompletion
+intc_0 // NoOp
+==
+bnz main_l12
+err
+main_l12:
+txn ApplicationID
+intc_0 // 0
+==
+assert
+intc_1 // 1
+return
+
+// registerVoice
+registerVoice_0:
+proto 4 0
+global CurrentApplicationID
+bytec_0 // "voice_exists_"
+txn Sender
+concat
+app_global_get_ex
+store 1
+store 0
+load 1
+intc_0 // 0
+==
+assert
+bytec_0 // "voice_exists_"
+txn Sender
+concat
+intc_1 // 1
+app_global_put
+bytec_1 // "voice_id_"
+txn Sender
+concat
+global Round
+app_global_put
+bytec_3 // "voice_name_"
+txn Sender
+concat
+frame_dig -4
+extract 2 0
+app_global_put
+bytec 4 // "voice_uri_"
+txn Sender
+concat
+frame_dig -3
+extract 2 0
+app_global_put
+bytec 5 // "voice_rights_"
+txn Sender
+concat
+frame_dig -2
+extract 2 0
+app_global_put
+bytec 6 // "voice_price_"
+txn Sender
+concat
+frame_dig -1
+app_global_put
+bytec 7 // "voice_created_"
+txn Sender
+concat
+global LatestTimestamp
+app_global_put
+retsub
+
+// getVoiceId
+getVoiceId_1:
+proto 1 1
+intc_0 // 0
+global CurrentApplicationID
+bytec_1 // "voice_id_"
+frame_dig -1
+concat
+app_global_get_ex
+store 3
+store 2
+load 3
+assert
+load 2
+frame_bury 0
+retsub
+
+// voice_exists
+voiceexists_2:
+proto 1 1
+intc_0 // 0
+global CurrentApplicationID
+bytec_0 // "voice_exists_"
+frame_dig -1
+concat
+app_global_get_ex
+store 5
+store 4
+load 5
+!
+!
+frame_bury 0
+retsub
+
+// unregister_voice
+unregistervoice_3:
+proto 0 0
+bytec_0 // "voice_exists_"
+txn Sender
+concat
+app_global_get
+intc_1 // 1
+==
+assert
+bytec_0 // "voice_exists_"
+txn Sender
+concat
+app_global_del
+bytec_1 // "voice_id_"
+txn Sender
+concat
+app_global_del
+bytec_3 // "voice_name_"
+txn Sender
+concat
+app_global_del
+bytec 4 // "voice_uri_"
+txn Sender
+concat
+app_global_del
+bytec 5 // "voice_rights_"
+txn Sender
+concat
+app_global_del
+bytec 6 // "voice_price_"
+txn Sender
+concat
+app_global_del
+bytec 7 // "voice_created_"
+txn Sender
+concat
+app_global_del
+retsub
+
+// registerVoice_caster
+registerVoicecaster_4:
+proto 0 0
+bytec_2 // ""
+dupn 2
+intc_0 // 0
+txna ApplicationArgs 1
+frame_bury 0
+txna ApplicationArgs 2
+frame_bury 1
+txna ApplicationArgs 3
+frame_bury 2
+txna ApplicationArgs 4
+btoi
+frame_bury 3
+frame_dig 0
+frame_dig 1
+frame_dig 2
+frame_dig 3
+callsub registerVoice_0
+retsub
+
+// getVoiceId_caster
+getVoiceIdcaster_5:
+proto 0 0
+intc_0 // 0
+bytec_2 // ""
+txna ApplicationArgs 1
+frame_bury 1
+frame_dig 1
+callsub getVoiceId_1
+frame_bury 0
+bytec 8 // 0x151f7c75
+frame_dig 0
+itob
+concat
+log
+retsub
+
+// voice_exists_caster
+voiceexistscaster_6:
+proto 0 0
+intc_0 // 0
+bytec_2 // ""
+txna ApplicationArgs 1
+frame_bury 1
+frame_dig 1
+callsub voiceexists_2
+frame_bury 0
+bytec 8 // 0x151f7c75
+pushbytes 0x00 // 0x00
+intc_0 // 0
+frame_dig 0
+setbit
+concat
+log
+retsub
+
+// unregister_voice_caster
+unregistervoicecaster_7:
+proto 0 0
+callsub unregistervoice_3
+retsub

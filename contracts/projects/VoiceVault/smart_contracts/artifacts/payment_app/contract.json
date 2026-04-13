@@ -1,0 +1,46 @@
+{
+    "name": "PaymentApp",
+    "methods": [
+        {
+            "name": "payWithRoyaltySplit",
+            "args": [
+                {
+                    "type": "address",
+                    "name": "creator"
+                },
+                {
+                    "type": "address",
+                    "name": "platform"
+                },
+                {
+                    "type": "address",
+                    "name": "royaltyRecipient"
+                },
+                {
+                    "type": "uint64",
+                    "name": "amount"
+                }
+            ],
+            "returns": {
+                "type": "void"
+            }
+        },
+        {
+            "name": "payFullToCreator",
+            "args": [
+                {
+                    "type": "address",
+                    "name": "creator"
+                },
+                {
+                    "type": "uint64",
+                    "name": "amount"
+                }
+            ],
+            "returns": {
+                "type": "void"
+            }
+        }
+    ],
+    "networks": {}
+}
