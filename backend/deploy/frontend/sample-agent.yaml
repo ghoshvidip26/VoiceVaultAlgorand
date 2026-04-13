@@ -1,0 +1,12 @@
+agent:
+  name: "Demo Voice Assistant"
+  description: "A sample voice assistant for testing the V3Labs platform"
+  endpoint: "wss://echo.websocket.org"
+  protocol: "websocket"
+  visibility: "public"
+  price_per_minute: 0.05
+  voice_type: "neutral"
+  tags:
+    - "demo"
+    - "testing"
+    - "assistant"

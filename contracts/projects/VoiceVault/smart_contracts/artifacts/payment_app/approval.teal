@@ -1,0 +1,230 @@
+#pragma version 8
+intcblock 0 1 10000
+bytecblock 0x
+txn NumAppArgs
+intc_0 // 0
+==
+bnz main_l6
+txna ApplicationArgs 0
+pushbytes 0xc856b281 // "payWithRoyaltySplit(address,address,address,uint64)void"
+==
+bnz main_l5
+txna ApplicationArgs 0
+pushbytes 0xb56d9055 // "payFullToCreator(address,uint64)void"
+==
+bnz main_l4
+err
+main_l4:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub payFullToCreatorcaster_3
+intc_1 // 1
+return
+main_l5:
+txn OnCompletion
+intc_0 // NoOp
+==
+txn ApplicationID
+intc_0 // 0
+!=
+&&
+assert
+callsub payWithRoyaltySplitcaster_2
+intc_1 // 1
+return
+main_l6:
+txn OnCompletion
+intc_0 // NoOp
+==
+bnz main_l8
+err
+main_l8:
+txn ApplicationID
+intc_0 // 0
+==
+assert
+intc_1 // 1
+return
+
+// payWithRoyaltySplit
+payWithRoyaltySplit_0:
+proto 4 0
+global GroupSize
+pushint 2 // 2
+==
+assert
+gtxn 0 TypeEnum
+intc_1 // pay
+==
+assert
+gtxn 0 Sender
+txn Sender
+==
+assert
+gtxn 0 Receiver
+global CurrentApplicationAddress
+==
+assert
+gtxn 0 Amount
+frame_dig -1
+==
+assert
+frame_dig -1
+intc_0 // 0
+>
+assert
+frame_dig -4
+global ZeroAddress
+!=
+assert
+frame_dig -3
+global ZeroAddress
+!=
+assert
+frame_dig -2
+global ZeroAddress
+!=
+assert
+frame_dig -1
+pushint 250 // 250
+mulw
+intc_0 // 0
+intc_2 // 10000
+divmodw
+pop
+pop
+swap
+!
+assert
+store 0
+frame_dig -1
+load 0
+-
+store 1
+load 1
+pushint 1000 // 1000
+mulw
+intc_0 // 0
+intc_2 // 10000
+divmodw
+pop
+pop
+swap
+!
+assert
+store 2
+load 1
+load 2
+-
+store 3
+itxn_begin
+intc_1 // pay
+itxn_field TypeEnum
+frame_dig -3
+itxn_field Receiver
+load 0
+itxn_field Amount
+intc_0 // 0
+itxn_field Fee
+itxn_submit
+itxn_begin
+intc_1 // pay
+itxn_field TypeEnum
+frame_dig -2
+itxn_field Receiver
+load 2
+itxn_field Amount
+intc_0 // 0
+itxn_field Fee
+itxn_submit
+itxn_begin
+intc_1 // pay
+itxn_field TypeEnum
+frame_dig -4
+itxn_field Receiver
+load 3
+itxn_field Amount
+intc_0 // 0
+itxn_field Fee
+itxn_submit
+pushbytes 0x5041594d454e545f53504c49545f444f4e45 // "PAYMENT_SPLIT_DONE"
+log
+retsub
+
+// payFullToCreator
+payFullToCreator_1:
+proto 2 0
+gtxn 0 TypeEnum
+intc_1 // pay
+==
+assert
+gtxn 0 Sender
+txn Sender
+==
+assert
+gtxn 0 Amount
+frame_dig -1
+==
+assert
+frame_dig -1
+intc_0 // 0
+>
+assert
+frame_dig -2
+global ZeroAddress
+!=
+assert
+itxn_begin
+intc_1 // pay
+itxn_field TypeEnum
+frame_dig -2
+itxn_field Receiver
+frame_dig -1
+itxn_field Amount
+itxn_submit
+pushbytes 0x46554c4c5f5041594d454e54 // "FULL_PAYMENT"
+log
+retsub
+
+// payWithRoyaltySplit_caster
+payWithRoyaltySplitcaster_2:
+proto 0 0
+bytec_0 // ""
+dupn 2
+intc_0 // 0
+txna ApplicationArgs 1
+frame_bury 0
+txna ApplicationArgs 2
+frame_bury 1
+txna ApplicationArgs 3
+frame_bury 2
+txna ApplicationArgs 4
+btoi
+frame_bury 3
+frame_dig 0
+frame_dig 1
+frame_dig 2
+frame_dig 3
+callsub payWithRoyaltySplit_0
+retsub
+
+// payFullToCreator_caster
+payFullToCreatorcaster_3:
+proto 0 0
+bytec_0 // ""
+intc_0 // 0
+txna ApplicationArgs 1
+frame_bury 0
+txna ApplicationArgs 2
+btoi
+frame_bury 1
+frame_dig 0
+frame_dig 1
+callsub payFullToCreator_1
+retsub

@@ -1,0 +1,61 @@
+{
+    "name": "Voice",
+    "methods": [
+        {
+            "name": "registerVoice",
+            "args": [
+                {
+                    "type": "string",
+                    "name": "name"
+                },
+                {
+                    "type": "string",
+                    "name": "modelUri"
+                },
+                {
+                    "type": "string",
+                    "name": "rights"
+                },
+                {
+                    "type": "uint64",
+                    "name": "pricePerUse"
+                }
+            ],
+            "returns": {
+                "type": "void"
+            }
+        },
+        {
+            "name": "getVoiceId",
+            "args": [
+                {
+                    "type": "address",
+                    "name": "owner"
+                }
+            ],
+            "returns": {
+                "type": "uint64"
+            }
+        },
+        {
+            "name": "voice_exists",
+            "args": [
+                {
+                    "type": "address",
+                    "name": "owner"
+                }
+            ],
+            "returns": {
+                "type": "bool"
+            }
+        },
+        {
+            "name": "unregister_voice",
+            "args": [],
+            "returns": {
+                "type": "void"
+            }
+        }
+    ],
+    "networks": {}
+}

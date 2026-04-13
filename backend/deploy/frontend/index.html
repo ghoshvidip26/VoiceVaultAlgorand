@@ -1,0 +1,304 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>V3Labs - Voice Agent Platform</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .hero-section {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 4rem 0;
+        }
+        .card {
+            border: none;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .card:hover {
+            transform: translateY(-2px);
+        }
+        .nav-pills .nav-link.active {
+            background-color: #667eea;
+        }
+        .response-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0.25rem;
+        }
+        .error-box {
+            background-color: #f8d7da;
+            border-left: 4px solid #dc3545;
+            padding: 1rem;
+            margin-top: 1rem;
+            border-radius: 0.25rem;
+        }
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 8px;
+        }
+        .status-online { background-color: #28a745; }
+        .status-offline { background-color: #dc3545; }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <div class="hero-section">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-lg-8">
+                    <h1 class="display-4 fw-bold mb-3">
+                        <i class="fas fa-microphone-alt me-3"></i>
+                        V3Labs Platform
+                    </h1>
+                    <p class="lead mb-4">Deploy, host, and monetize voice-based AI agents in the cloud</p>
+                    <div class="d-flex align-items-center">
+                        <span class="status-indicator" id="apiStatus"></span>
+                        <span id="apiStatusText">Checking API status...</span>
+                    </div>
+                </div>
+                <div class="col-lg-4 text-center">
+                    <i class="fas fa-robot fa-8x opacity-75"></i>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Content -->
+    <div class="container my-5">
+        <!-- Navigation Tabs -->
+        <ul class="nav nav-pills mb-4" id="mainTabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" id="marketplace-tab" data-bs-toggle="pill" data-bs-target="#marketplace" type="button">
+                    <i class="fas fa-store me-2"></i>Marketplace
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="deploy-tab" data-bs-toggle="pill" data-bs-target="#deploy" type="button">
+                    <i class="fas fa-upload me-2"></i>Deploy Agent
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="connect-tab" data-bs-toggle="pill" data-bs-target="#connect" type="button">
+                    <i class="fas fa-plug me-2"></i>Connect to Agent
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" id="usage-tab" data-bs-toggle="pill" data-bs-target="#usage" type="button">
+                    <i class="fas fa-chart-bar me-2"></i>Usage Stats
+                </button>
+            </li>
+        </ul>
+
+        <!-- Tab Content -->
+        <div class="tab-content" id="mainTabContent">
+            <!-- Marketplace Tab -->
+            <div class="tab-pane fade show active" id="marketplace" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-store me-2"></i>Agent Marketplace
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <button class="btn btn-primary mb-3" onclick="loadAgents()">
+                            <i class="fas fa-sync me-2"></i>Refresh Agents
+                        </button>
+                        <div id="agentsList">
+                            <p class="text-muted">Click "Refresh Agents" to load available agents...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Deploy Agent Tab -->
+            <div class="tab-pane fade" id="deploy" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-upload me-2"></i>Deploy New Agent
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <form id="deployForm">
+                            <div class="mb-3">
+                                <label for="deployKey" class="form-label">Deploy API Key</label>
+                                <input type="password" class="form-control" id="deployKey" placeholder="v3labs_deploy_...">
+                                <div class="form-text">Your deploy key for authentication</div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="agentName" class="form-label">Agent Name</label>
+                                <input type="text" class="form-control" id="agentName" placeholder="My Voice Agent">
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="agentDescription" class="form-label">Description</label>
+                                <textarea class="form-control" id="agentDescription" rows="3" placeholder="Describe what your agent does..."></textarea>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="agentEndpoint" class="form-label">Agent Endpoint</label>
+                                <input type="url" class="form-control" id="agentEndpoint" placeholder="wss://myagent.com/voice">
+                                <div class="form-text">WebSocket endpoint where your agent is running</div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="agentProtocol" class="form-label">Protocol</label>
+                                        <select class="form-select" id="agentProtocol">
+                                            <option value="websocket">WebSocket</option>
+                                            <option value="webrtc">WebRTC</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="agentVisibility" class="form-label">Visibility</label>
+                                        <select class="form-select" id="agentVisibility">
+                                            <option value="public">Public</option>
+                                            <option value="private">Private</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="row">
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="agentPrice" class="form-label">Price per Minute ($)</label>
+                                        <input type="number" class="form-control" id="agentPrice" step="0.01" min="0" value="0.10">
+                                    </div>
+                                </div>
+                                <div class="col-md-6">
+                                    <div class="mb-3">
+                                        <label for="agentVoiceType" class="form-label">Voice Type</label>
+                                        <input type="text" class="form-control" id="agentVoiceType" placeholder="female, male, neutral">
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="mb-3">
+                                <label for="agentTags" class="form-label">Tags (comma-separated)</label>
+                                <input type="text" class="form-control" id="agentTags" placeholder="support, crypto, assistant">
+                            </div>
+                            
+                            <button type="submit" class="btn btn-success">
+                                <i class="fas fa-rocket me-2"></i>Deploy Agent
+                            </button>
+                        </form>
+                        <div id="deployResponse"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Connect to Agent Tab -->
+            <div class="tab-pane fade" id="connect" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-plug me-2"></i>Connect to Agent
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <label for="consumerKey" class="form-label">Consumer API Key</label>
+                            <input type="password" class="form-control" id="consumerKey" placeholder="v3labs_consumer_...">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="connectAgentId" class="form-label">Agent ID</label>
+                            <input type="text" class="form-control" id="connectAgentId" placeholder="Enter agent ID or select from marketplace">
+                        </div>
+                        
+                        <div class="mb-3">
+                            <button class="btn btn-primary" onclick="connectToAgent()">
+                                <i class="fas fa-play me-2"></i>Connect
+                            </button>
+                            <button class="btn btn-danger ms-2" onclick="disconnectFromAgent()" disabled id="disconnectBtn">
+                                <i class="fas fa-stop me-2"></i>Disconnect
+                            </button>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label">Connection Status</label>
+                            <div id="connectionStatus" class="alert alert-secondary">
+                                <i class="fas fa-circle me-2"></i>Not connected
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label for="testMessage" class="form-label">Test Message</label>
+                            <div class="input-group">
+                                <input type="text" class="form-control" id="testMessage" placeholder="Type a test message...">
+                                <button class="btn btn-outline-primary" onclick="sendTestMessage()" disabled id="sendBtn">
+                                    <i class="fas fa-paper-plane"></i>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div id="connectionLog" class="response-box" style="display: none;">
+                            <h6>Connection Log:</h6>
+                            <div id="logContent"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Usage Stats Tab -->
+            <div class="tab-pane fade" id="usage" role="tabpanel">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>Usage Statistics
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6">
+                                <h6>Agent Usage (Developer)</h6>
+                                <div class="mb-3">
+                                    <label for="agentUsageKey" class="form-label">Deploy API Key</label>
+                                    <input type="password" class="form-control" id="agentUsageKey" placeholder="v3labs_deploy_...">
+                                </div>
+                                <div class="mb-3">
+                                    <label for="usageAgentId" class="form-label">Agent ID</label>
+                                    <input type="text" class="form-control" id="usageAgentId" placeholder="Agent ID">
+                                </div>
+                                <button class="btn btn-info" onclick="loadAgentUsage()">
+                                    <i class="fas fa-chart-line me-2"></i>Load Agent Stats
+                                </button>
+                                <div id="agentUsageResponse"></div>
+                            </div>
+                            
+                            <div class="col-md-6">
+                                <h6>Consumer Usage</h6>
+                                <div class="mb-3">
+                                    <label for="consumerUsageKey" class="form-label">Consumer API Key</label>
+                                    <input type="password" class="form-control" id="consumerUsageKey" placeholder="v3labs_consumer_...">
+                                </div>
+                                <button class="btn btn-info" onclick="loadConsumerUsage()">
+                                    <i class="fas fa-user-chart me-2"></i>Load Consumer Stats
+                                </button>
+                                <div id="consumerUsageResponse"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bootstrap JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="app.js"></script>
+</body>
+</html>
