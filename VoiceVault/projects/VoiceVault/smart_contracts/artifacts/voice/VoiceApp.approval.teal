@@ -1,0 +1,252 @@
+#pragma version 11
+#pragma typetrack false
+
+// algopy.arc4.ARC4Contract.approval_program() -> uint64:
+main:
+    intcblock 0 1 2 32
+    bytecblock 0x6578697374735f 0x69645f 0x6e616d655f 0x7572695f 0x7269676874735f 0x70726963655f 0x637265617465645f 0x151f7c75
+    // smart_contracts/voice/contract.py:10
+    // class VoiceApp(ARC4Contract):
+    txn NumAppArgs
+    bz main___algopy_default_create@11
+    txn OnCompletion
+    !
+    assert
+    txn ApplicationID
+    assert
+    pushbytess 0x68ab9f13 0x1b2704e5 0xc751ee7f 0xe9d0efdb // method "register_voice(string,string,string,uint64)void", method "get_voice_id(address)uint64", method "voice_exists(address)bool", method "unregister_voice()void"
+    txna ApplicationArgs 0
+    match register_voice get_voice_id voice_exists unregister_voice
+    err
+
+main___algopy_default_create@11:
+    txn OnCompletion
+    !
+    txn ApplicationID
+    !
+    &&
+    return
+
+
+// smart_contracts.voice.contract.VoiceApp.register_voice[routing]() -> void:
+register_voice:
+    // smart_contracts/voice/contract.py:15
+    // @arc4.abimethod
+    txna ApplicationArgs 1
+    dup
+    intc_0 // 0
+    extract_uint16 // on error: invalid array length header
+    intc_2 // 2
+    +
+    dig 1
+    len
+    ==
+    assert // invalid number of bytes for arc4.dynamic_array<arc4.uint8>
+    txna ApplicationArgs 2
+    dup
+    intc_0 // 0
+    extract_uint16 // on error: invalid array length header
+    intc_2 // 2
+    +
+    dig 1
+    len
+    ==
+    assert // invalid number of bytes for arc4.dynamic_array<arc4.uint8>
+    txna ApplicationArgs 3
+    dup
+    intc_0 // 0
+    extract_uint16 // on error: invalid array length header
+    intc_2 // 2
+    +
+    dig 1
+    len
+    ==
+    assert // invalid number of bytes for arc4.dynamic_array<arc4.uint8>
+    txna ApplicationArgs 4
+    dup
+    len
+    pushint 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    // smart_contracts/voice/contract.py:23-24
+    // # Use Global.creator_address bytes as part of the key
+    // addr_bytes = Global.creator_address.bytes
+    global CreatorAddress
+    // smart_contracts/voice/contract.py:26
+    // op.AppGlobal.put(b"exists_" + addr_bytes, UInt64(1))
+    bytec_0 // 0x6578697374735f
+    dig 1
+    concat
+    intc_1 // 1
+    app_global_put
+    // smart_contracts/voice/contract.py:27-28
+    // # op.AppGlobal.put(b"id_" + addr_bytes, Global.round) # Global.round is fine
+    // op.AppGlobal.put(b"id_" + addr_bytes, Global.round)
+    bytec_1 // 0x69645f
+    dig 1
+    concat
+    global Round
+    app_global_put
+    // smart_contracts/voice/contract.py:29
+    // op.AppGlobal.put(b"name_" + addr_bytes, name.bytes)
+    bytec_2 // 0x6e616d655f
+    dig 1
+    concat
+    uncover 5
+    app_global_put
+    // smart_contracts/voice/contract.py:30
+    // op.AppGlobal.put(b"uri_" + addr_bytes, model_uri.bytes)
+    bytec_3 // 0x7572695f
+    dig 1
+    concat
+    uncover 4
+    app_global_put
+    // smart_contracts/voice/contract.py:31
+    // op.AppGlobal.put(b"rights_" + addr_bytes, rights.bytes)
+    bytec 4 // 0x7269676874735f
+    dig 1
+    concat
+    uncover 3
+    app_global_put
+    // smart_contracts/voice/contract.py:32
+    // op.AppGlobal.put(b"price_" + addr_bytes, price_per_use.native)
+    bytec 5 // 0x70726963655f
+    dig 1
+    concat
+    uncover 2
+    btoi
+    app_global_put
+    // smart_contracts/voice/contract.py:33
+    // op.AppGlobal.put(b"created_" + addr_bytes, Global.latest_timestamp)
+    bytec 6 // 0x637265617465645f
+    swap
+    concat
+    global LatestTimestamp
+    app_global_put
+    // smart_contracts/voice/contract.py:15
+    // @arc4.abimethod
+    intc_1 // 1
+    return
+
+
+// smart_contracts.voice.contract.VoiceApp.get_voice_id[routing]() -> void:
+get_voice_id:
+    // smart_contracts/voice/contract.py:35
+    // @arc4.abimethod(readonly=True)
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_3 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    // smart_contracts/voice/contract.py:38
+    // val, exists = op.AppGlobal.get_ex_uint64(UInt64(0), b"id_" + addr_bytes)
+    bytec_1 // 0x69645f
+    swap
+    concat
+    intc_0 // 0
+    swap
+    app_global_get_ex
+    // smart_contracts/voice/contract.py:39
+    // assert exists, "Voice ID not found for this owner"
+    assert // Voice ID not found for this owner
+    // smart_contracts/voice/contract.py:40
+    // return arc4.UInt64(val)
+    itob
+    // smart_contracts/voice/contract.py:35
+    // @arc4.abimethod(readonly=True)
+    bytec 7 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_1 // 1
+    return
+
+
+// smart_contracts.voice.contract.VoiceApp.voice_exists[routing]() -> void:
+voice_exists:
+    // smart_contracts/voice/contract.py:42
+    // @arc4.abimethod(readonly=True)
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_3 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    // smart_contracts/voice/contract.py:45
+    // ignored_val, exists = op.AppGlobal.get_ex_uint64(UInt64(0), b"exists_" + addr_bytes)
+    bytec_0 // 0x6578697374735f
+    swap
+    concat
+    intc_0 // 0
+    swap
+    app_global_get_ex
+    bury 1
+    // smart_contracts/voice/contract.py:46
+    // return arc4.Bool(exists)
+    pushbytes 0x00
+    intc_0 // 0
+    uncover 2
+    setbit
+    // smart_contracts/voice/contract.py:42
+    // @arc4.abimethod(readonly=True)
+    bytec 7 // 0x151f7c75
+    swap
+    concat
+    log
+    intc_1 // 1
+    return
+
+
+// smart_contracts.voice.contract.VoiceApp.unregister_voice[routing]() -> void:
+unregister_voice:
+    // smart_contracts/voice/contract.py:50-51
+    // # Assuming only creator can unregister their own voice for now based on previous logic
+    // addr_bytes = Global.creator_address.bytes
+    global CreatorAddress
+    // smart_contracts/voice/contract.py:52
+    // op.AppGlobal.delete(b"exists_" + addr_bytes)
+    bytec_0 // 0x6578697374735f
+    dig 1
+    concat
+    app_global_del
+    // smart_contracts/voice/contract.py:53
+    // op.AppGlobal.delete(b"id_" + addr_bytes)
+    bytec_1 // 0x69645f
+    dig 1
+    concat
+    app_global_del
+    // smart_contracts/voice/contract.py:54
+    // op.AppGlobal.delete(b"name_" + addr_bytes)
+    bytec_2 // 0x6e616d655f
+    dig 1
+    concat
+    app_global_del
+    // smart_contracts/voice/contract.py:55
+    // op.AppGlobal.delete(b"uri_" + addr_bytes)
+    bytec_3 // 0x7572695f
+    dig 1
+    concat
+    app_global_del
+    // smart_contracts/voice/contract.py:56
+    // op.AppGlobal.delete(b"rights_" + addr_bytes)
+    bytec 4 // 0x7269676874735f
+    dig 1
+    concat
+    app_global_del
+    // smart_contracts/voice/contract.py:57
+    // op.AppGlobal.delete(b"price_" + addr_bytes)
+    bytec 5 // 0x70726963655f
+    dig 1
+    concat
+    app_global_del
+    // smart_contracts/voice/contract.py:58
+    // op.AppGlobal.delete(b"created_" + addr_bytes)
+    bytec 6 // 0x637265617465645f
+    swap
+    concat
+    app_global_del
+    // smart_contracts/voice/contract.py:48
+    // @arc4.abimethod
+    intc_1 // 1
+    return

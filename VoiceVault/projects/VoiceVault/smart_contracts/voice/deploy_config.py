@@ -5,18 +5,16 @@ import algokit_utils
 logger = logging.getLogger(__name__)
 
 
-# define deployment behaviour based on supplied app spec
 def deploy() -> None:
-    from smart_contracts.artifacts.hello_world.hello_world_client import (
-        HelloArgs,
-        HelloWorldFactory,
+    from smart_contracts.artifacts.voice.voice_app_client import (
+        VoiceAppFactory,
     )
 
     algorand = algokit_utils.AlgorandClient.from_environment()
     deployer_ = algorand.account.from_environment("DEPLOYER")
 
     factory = algorand.client.get_typed_app_factory(
-        HelloWorldFactory, default_sender=deployer_.address
+        VoiceAppFactory, default_sender=deployer_.address
     )
 
     app_client, result = factory.deploy(
@@ -36,9 +34,6 @@ def deploy() -> None:
             )
         )
 
-    name = "world"
-    response = app_client.send.hello(args=HelloArgs(name=name))
     logger.info(
-        f"Called hello on {app_client.app_name} ({app_client.app_id}) "
-        f"with name={name}, received: {response.abi_return}"
+        f"Deployed VoiceApp (ID: {app_client.app_id}, Address: {app_client.app_address})"
     )

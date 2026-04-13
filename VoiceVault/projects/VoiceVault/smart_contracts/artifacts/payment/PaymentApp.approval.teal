@@ -1,0 +1,340 @@
+#pragma version 11
+#pragma typetrack false
+
+// algopy.arc4.ARC4Contract.approval_program() -> uint64:
+main:
+    intcblock 1 32 10000 0
+    // smart_contracts/payment/contract.py:12
+    // class PaymentApp(ARC4Contract):
+    txn NumAppArgs
+    bz main___algopy_default_create@10
+    txn OnCompletion
+    !
+    assert
+    txn ApplicationID
+    assert
+    pushbytess 0xaf698039 0xd4e408f3 0xf60531f4 // method "pay_with_royalty_split(pay,address,address,address,uint64)void", method "pay_full_to_creator(pay,address,uint64)void", method "calculate_payment_breakdown(uint64)(uint64,uint64,uint64)"
+    txna ApplicationArgs 0
+    match pay_with_royalty_split pay_full_to_creator calculate_payment_breakdown
+    err
+
+main___algopy_default_create@10:
+    txn OnCompletion
+    !
+    txn ApplicationID
+    !
+    &&
+    return
+
+
+// smart_contracts.payment.contract.PaymentApp.pay_with_royalty_split[routing]() -> void:
+pay_with_royalty_split:
+    // smart_contracts/payment/contract.py:17
+    // @arc4.abimethod
+    txn GroupIndex
+    intc_0 // 1
+    -
+    dup
+    gtxns TypeEnum
+    intc_0 // pay
+    ==
+    assert // transaction type is pay
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_1 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    txna ApplicationArgs 2
+    dup
+    len
+    intc_1 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    txna ApplicationArgs 3
+    dup
+    len
+    intc_1 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    txna ApplicationArgs 4
+    dup
+    len
+    pushint 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    // smart_contracts/payment/contract.py:27
+    // payment_txn.receiver == Global.current_application_address
+    dig 4
+    gtxns Receiver
+    global CurrentApplicationAddress
+    ==
+    // smart_contracts/payment/contract.py:26-28
+    // assert (
+    //     payment_txn.receiver == Global.current_application_address
+    // ), "Receiver must be this app"
+    assert // Receiver must be this app
+    // smart_contracts/payment/contract.py:29
+    // assert payment_txn.amount == amount.native, "Payment amount mismatch"
+    uncover 4
+    gtxns Amount
+    swap
+    btoi
+    swap
+    dig 1
+    ==
+    assert // Payment amount mismatch
+    // smart_contracts/payment/contract.py:31-34
+    // # Fee calculations:
+    // # Platform Fee: 2.5% (250 / 10000)
+    // # Royalty: 10% of remaining (1000 / 10000)
+    // platform_fee = (amount.native * UInt64(250)) // UInt64(10000)
+    dup
+    pushint 250
+    *
+    intc_2 // 10000
+    /
+    // smart_contracts/payment/contract.py:35
+    // remaining = amount.native - platform_fee
+    swap
+    dig 1
+    -
+    // smart_contracts/payment/contract.py:36
+    // royalty = (remaining * UInt64(1000)) // UInt64(10000)
+    dup
+    pushint 1000
+    *
+    intc_2 // 10000
+    /
+    // smart_contracts/payment/contract.py:37
+    // creator_amt = remaining - royalty
+    swap
+    dig 1
+    -
+    // smart_contracts/payment/contract.py:39-44
+    // # 1. Transfer Platform Fee
+    // itxn.Payment(
+    //     receiver=platform.native,
+    //     amount=platform_fee,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    uncover 2
+    itxn_field Amount
+    uncover 3
+    itxn_field Receiver
+    // smart_contracts/payment/contract.py:39-40
+    // # 1. Transfer Platform Fee
+    // itxn.Payment(
+    intc_0 // pay
+    itxn_field TypeEnum
+    // smart_contracts/payment/contract.py:43
+    // fee=UInt64(0),
+    intc_3 // 0
+    itxn_field Fee
+    // smart_contracts/payment/contract.py:39-44
+    // # 1. Transfer Platform Fee
+    // itxn.Payment(
+    //     receiver=platform.native,
+    //     amount=platform_fee,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // smart_contracts/payment/contract.py:46-51
+    // # 2. Transfer Royalty
+    // itxn.Payment(
+    //     receiver=royalty_recipient.native,
+    //     amount=royalty,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    swap
+    itxn_field Amount
+    swap
+    itxn_field Receiver
+    // smart_contracts/payment/contract.py:46-47
+    // # 2. Transfer Royalty
+    // itxn.Payment(
+    intc_0 // pay
+    itxn_field TypeEnum
+    // smart_contracts/payment/contract.py:50
+    // fee=UInt64(0),
+    intc_3 // 0
+    itxn_field Fee
+    // smart_contracts/payment/contract.py:46-51
+    // # 2. Transfer Royalty
+    // itxn.Payment(
+    //     receiver=royalty_recipient.native,
+    //     amount=royalty,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // smart_contracts/payment/contract.py:53-58
+    // # 3. Transfer Creator Share
+    // itxn.Payment(
+    //     receiver=creator.native,
+    //     amount=creator_amt,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    itxn_field Amount
+    itxn_field Receiver
+    // smart_contracts/payment/contract.py:53-54
+    // # 3. Transfer Creator Share
+    // itxn.Payment(
+    intc_0 // pay
+    itxn_field TypeEnum
+    // smart_contracts/payment/contract.py:57
+    // fee=UInt64(0),
+    intc_3 // 0
+    itxn_field Fee
+    // smart_contracts/payment/contract.py:53-58
+    // # 3. Transfer Creator Share
+    // itxn.Payment(
+    //     receiver=creator.native,
+    //     amount=creator_amt,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // smart_contracts/payment/contract.py:17
+    // @arc4.abimethod
+    intc_0 // 1
+    return
+
+
+// smart_contracts.payment.contract.PaymentApp.pay_full_to_creator[routing]() -> void:
+pay_full_to_creator:
+    // smart_contracts/payment/contract.py:60
+    // @arc4.abimethod
+    txn GroupIndex
+    intc_0 // 1
+    -
+    dup
+    gtxns TypeEnum
+    intc_0 // pay
+    ==
+    assert // transaction type is pay
+    txna ApplicationArgs 1
+    dup
+    len
+    intc_1 // 32
+    ==
+    assert // invalid number of bytes for arc4.static_array<arc4.uint8, 32>
+    txna ApplicationArgs 2
+    dup
+    len
+    pushint 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    // smart_contracts/payment/contract.py:68
+    // payment_txn.receiver == Global.current_application_address
+    dig 2
+    gtxns Receiver
+    global CurrentApplicationAddress
+    ==
+    // smart_contracts/payment/contract.py:67-69
+    // assert (
+    //     payment_txn.receiver == Global.current_application_address
+    // ), "Receiver must be this app"
+    assert // Receiver must be this app
+    // smart_contracts/payment/contract.py:70
+    // assert payment_txn.amount == amount.native, "Payment amount mismatch"
+    uncover 2
+    gtxns Amount
+    swap
+    btoi
+    swap
+    dig 1
+    ==
+    assert // Payment amount mismatch
+    // smart_contracts/payment/contract.py:72-76
+    // itxn.Payment(
+    //     receiver=creator.native,
+    //     amount=amount.native,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_begin
+    itxn_field Amount
+    itxn_field Receiver
+    // smart_contracts/payment/contract.py:72
+    // itxn.Payment(
+    intc_0 // pay
+    itxn_field TypeEnum
+    // smart_contracts/payment/contract.py:75
+    // fee=UInt64(0),
+    intc_3 // 0
+    itxn_field Fee
+    // smart_contracts/payment/contract.py:72-76
+    // itxn.Payment(
+    //     receiver=creator.native,
+    //     amount=amount.native,
+    //     fee=UInt64(0),
+    // ).submit()
+    itxn_submit
+    // smart_contracts/payment/contract.py:60
+    // @arc4.abimethod
+    intc_0 // 1
+    return
+
+
+// smart_contracts.payment.contract.PaymentApp.calculate_payment_breakdown[routing]() -> void:
+calculate_payment_breakdown:
+    // smart_contracts/payment/contract.py:78
+    // @arc4.abimethod(readonly=True)
+    txna ApplicationArgs 1
+    dup
+    len
+    pushint 8
+    ==
+    assert // invalid number of bytes for arc4.uint64
+    // smart_contracts/payment/contract.py:82-83
+    // # Platform Fee: 2.5%
+    // platform_fee = (amount.native * UInt64(250)) // UInt64(10000)
+    btoi
+    dup
+    pushint 250
+    *
+    intc_2 // 10000
+    /
+    // smart_contracts/payment/contract.py:84
+    // remaining = amount.native - platform_fee
+    swap
+    dig 1
+    -
+    // smart_contracts/payment/contract.py:85-86
+    // # Royalty: 10% of remaining
+    // royalty = (remaining * UInt64(1000)) // UInt64(10000)
+    dup
+    pushint 1000
+    *
+    intc_2 // 10000
+    /
+    // smart_contracts/payment/contract.py:87
+    // creator_amt = remaining - royalty
+    swap
+    dig 1
+    -
+    // smart_contracts/payment/contract.py:90
+    // arc4.UInt64(platform_fee),
+    uncover 2
+    itob
+    // smart_contracts/payment/contract.py:91
+    // arc4.UInt64(royalty),
+    uncover 2
+    itob
+    // smart_contracts/payment/contract.py:92
+    // arc4.UInt64(creator_amt),
+    uncover 2
+    itob
+    // smart_contracts/payment/contract.py:78
+    // @arc4.abimethod(readonly=True)
+    cover 2
+    concat
+    swap
+    concat
+    pushbytes 0x151f7c75
+    swap
+    concat
+    log
+    intc_0 // 1
+    return

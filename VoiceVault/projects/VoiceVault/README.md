@@ -99,3 +99,34 @@ This project makes use of Algorand Python to build Algorand smart contracts. The
 - [Poetry](https://python-poetry.org/): Python packaging and dependency management.
 It has also been configured to have a productive dev experience out of the box in [VS Code](https://code.visualstudio.com/), see the [.vscode](./.vscode) folder.
 
+## FastAPI x402 service
+
+This repo now includes a FastAPI resource server at [`api/main.py`](./api/main.py) that:
+
+- exposes public voice metadata at `GET /v1/voices/{owner}`
+- protects `POST /v1/voices/{owner}/infer` with x402 on Algorand
+- reads `price_per_use` directly from the deployed `VoiceApp` global state
+
+### Configure
+
+Copy `.env.example` to `.env` and set:
+
+- `ALGOD_URL`
+- `ALGOD_TOKEN`
+- `VOICE_APP_ID`
+- `X402_PAY_TO`
+
+The default `X402_FACILITATOR_URL` points at GoPlausible's Algorand facilitator and `X402_NETWORK` defaults to Algorand testnet.
+
+### Run
+
+```bash
+poetry install
+poetry run uvicorn api.main:app --reload
+```
+
+### Notes
+
+- The x402-protected route is `POST /v1/voices/{owner}/infer`.
+- The current smart contract stores voice state under the on-chain key prefix built from `Global.creator_address`, so the API reads exactly that layout.
+- `price_per_use` is interpreted as a scaled USD amount using `X402_PRICE_SCALE` (default `1_000_000`, i.e. micro-USD / micro-USDC style units).
